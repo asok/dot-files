@@ -823,42 +823,6 @@ Interactively also sends a terminating newline."
 
   (remove-hook 'ruby-mode-hook 'robe-mode)
 
-  (defun asok/rubocop-doc-url (id)
-    (format
-     "https://docs.rubocop.org/en/latest/cops_%s/#%s"
-     (downcase (car (split-string id "/")))
-     (downcase (replace-regexp-in-string "/" "" id))
-     ))
-
-  (defun asok/rubocop-doc-eww (id)
-    (interactive "sCop name: ")
-    (eww (asok/rubocop-doc-url id)))
-
-  (defun asok/rubocop-doc-browse (id)
-    (interactive "sCop name: ")
-    (browse-url (asok/rubocop-doc-url id)))
-
-  (defun asok/rubocop-first-cop-id-at-point ()
-    (let ((e (--first (eq (flycheck-error-checker it) 'ruby-rubocop)
-                      (flycheck-overlay-errors-at (point)))))
-      (if e
-          (flycheck-error-id e)
-        (warn "No error for ruby-rubocop checker found at the current pos"))))
-
-  (defun asok/rubocop-doc-at-point ()
-    (interactive)
-    (let ((id (asok/rubocop-first-cop-id-at-point)))
-      (when id
-        (asok/rubocop-doc-browse id))))
-
-  (defun asok/rubocop-disable-first-cop-at-point ()
-    (interactive)
-    (let ((id (asok/rubocop-first-cop-id-at-point)))
-      (when id
-        (save-excursion
-          (end-of-line)
-          (insert (format " # rubocop:disable %s" id))))))
-
   (add-hook 'js2-mode-hook
             (lambda ()
               (push '("function" . ?λ) prettify-symbols-alist)))
@@ -1008,14 +972,40 @@ Returns non-nil if any such excessive-length line is detected."
     (interactive "sCop name: ")
     (browse-url (asok/rubocop-doc-url id)))
 
+  (defun asok/rubocop-cops-at-point ()
+    (-map 'flycheck-error-id
+          (--select (eq (flycheck-error-checker it) 'ruby-rubocop)
+                    (flycheck-overlay-errors-at (point)))))
+
+  (defun asok/rubocop-choose-cop (cops)
+    (if (> 1 (length cops))
+        (completing-read "Cop name: " cops nil t)
+      (car cops)))
+
   (defun asok/rubocop-doc-at-point ()
     (interactive)
-    (let ((e (--first (eq (flycheck-error-checker it) 'ruby-rubocop)
-                      (flycheck-overlay-errors-at (point)))))
-      (if e
-          (asok/rubocop-doc-browse (flycheck-error-id e))
-        (warn "No error for ruby-rubocop checker found at the current pos")))
-    )
+    (if-let ((cops (asok/rubocop-cops-at-point)))
+        (asok/rubocop-doc-browse (asok/rubocop-choose-cop cops))
+      (warn "No error for ruby-rubocop checker found at the current pos")))
+
+  (defun asok/rubocop-doc-browse (id)
+    (interactive "sCop name: ")
+    (browse-url (asok/rubocop-doc-url id)))
+
+  (defun asok/rubocop-toggle-cop! (cop)
+    (save-excursion
+      (end-of-line)
+      (insert (format " # rubocop:disable %s" cop))))
+
+  (defun asok/rubocop-toggle-cop ()
+    (interactive)
+    (if-let ((cops (asok/rubocop-cops-at-point)))
+        (asok/rubocop-toggle-cop! (asok/rubocop-choose-cop cops))
+      (warn "No error for ruby-rubocop checker found at the current pos")))
+
+  (add-hook 'js2-mode-hook
+            (lambda ()
+              (push '("function" . ?λ) prettify-symbols-alist)))
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
