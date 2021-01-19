@@ -27,7 +27,7 @@ values."
    dotspacemacs-ask-for-lazy-installation t
    ;; List of additional paths where to look for configuration layers.
    ;; Paths must have a trailing slash (i.e. `~/.mycontribs/')
-   dotspacemacs-configuration-layer-path '()
+   dotspacemacs-configuration-layer-path '("~/.emacs.d/private/")
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(typescript
@@ -44,11 +44,11 @@ values."
      ;; <M-m f e R> (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      (auto-completion :variables
-                      company-idle-delay 0.2
+                      company-idle-delay 0.5
                       auto-completion-enable-snippets-in-popup t
                       auto-completion-enable-sort-by-usage t
-                      auto-completion-return-key-behavior nil
-                      auto-completion-tab-key-behavior 'complete
+                      auto-completion-return-key-behavior 'complete
+                      auto-completion-tab-key-behavior 'cycle
                       auto-completion-complete-with-key-sequence "jk")
      ;; better-defaults
      emacs-lisp
@@ -58,21 +58,23 @@ values."
      clojure
      (tern :variables tern-command '("/home/asok/.nvm/versions/node/v10.16.3/bin/tern"))
      (javascript :variables javascript-backend 'tern)
-     org
+     (org :variables
+          org-enable-jira-support t
+          jiralib-url "https://gabi-com.atlassian.net")
      markdown
      dash
      themes-megapack
-     (lsp
-      :variables
-          lsp-ui-sideline-show-symbol   t
-          lsp-ui-sideline-enable        nil
-          lsp-ui-doc-enable             nil
-          lsp-ui-remap-xref-keybindings t
-          )
+     ;; (lsp
+     ;;  :variables
+     ;;      lsp-ui-sideline-show-symbol   t
+     ;;      lsp-ui-sideline-enable        nil
+     ;;      lsp-ui-doc-enable             nil
+     ;;      lsp-ui-remap-xref-keybindings t
+     ;;      )
      (ruby :variables
            ruby-version-manager 'chruby
            ruby-test-runner     'rspec
-           ruby-backend         'robe
+           ;; ruby-backend         'lsp
            )
      ruby-on-rails
      (shell :variables
@@ -130,9 +132,13 @@ values."
                                       company-tabnine
                                       nord-theme
                                       better-jumper
-                                      ;; ivy-posframe
+                                      ivy-posframe
                                       evil-vimish-fold
                                       leuven-theme
+                                      nvm
+                                      jest-test-mode
+                                      ivy-prescient
+                                      base16-theme
                                       )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -220,7 +226,9 @@ values."
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
    dotspacemacs-themes '(
+                         base16-default-light
                          doom-tomorrow-day
+                         twilight-bright
                          flatui
                          doom-spacegrey
                          solarized-light
@@ -333,7 +341,7 @@ values."
 
    ;; Which-key delay in seconds. The which-key buffer is the popup listing
    ;; the commands bound to the current keystroke sequence. (default 0.4)
-   dotspacemacs-which-key-delay 0.4
+   dotspacemacs-which-key-delay 0.8
    ;; Which-key frame position. Possible values are `right', `bottom' and
    ;; `right-then-bottom'. right-then-bottom tries to display the frame to the
    ;; right; if there is insufficient space it displays it at the bottom.
@@ -464,6 +472,14 @@ values."
    dotspacemacs-pretty-docs nil
    ))
 
+(defun dotspacemacs/user-env ()
+  "Environment variables setup.
+This function defines the environment variables for your Emacs session. By
+default it calls `spacemacs/load-spacemacs-env' which loads the environment
+variables declared in `~/.spacemacs.env' or `~/.spacemacs.d/.spacemacs.env'.
+See the header of this file for more information."
+  (spacemacs/load-spacemacs-env))
+
 (defun dotspacemacs/user-init ()
   "Initialization function for user code.
 It is called immediately after `dotspacemacs/init'.  You are free to put almost
@@ -501,10 +517,6 @@ in `dotspacemacs/user-config'."
    vterm-max-scrollback 10000
    read-process-output-max (* 1024 1024))
 
-  (with-eval-after-load 'evil-maps
-    (define-key evil-motion-state-map (kbd "C-o") 'better-jumper-jump-backward)
-    (define-key evil-motion-state-map (kbd "<C-i>") 'better-jumper-jump-forward))
-
   (spacemacs/add-to-hooks '(lambda ()
                              (setq-local compilation-always-kill t))
                           '(rspec-mode-hook rspec-verifiable-mode-hook rspec-compilation-mode-hook))
@@ -536,7 +548,6 @@ layers configuration. You are free to put any user code."
   (setq-default
    beacon-blink-when-focused t
    beacon-blink-when-point-moves-vertically nil
-   ivy-initial-inputs-alist nil
    ivy-use-virtual-buffers t
    ivy-re-builders-alist '((t      . ivy--regex-plus))
    ivy-extra-directories '("./")
@@ -553,8 +564,31 @@ layers configuration. You are free to put any user code."
    vc-handled-backends nil
    markdown-hide-urls t
    lsp-prefer-capf t
-   lsp-solargraph-use-bundler t
-   )
+   lsp-solargraph-use-bundler nil
+   bidi-paragraph-direction 'left-to-right)
+  )
+
+(defun dotspacemacs/user-load ()
+  "Library to load while dumping.
+This function is called only while dumping Spacemacs configuration. You can
+`require' or `load' the libraries of your choice that will be included in the
+dump."
+  )
+
+(defun dotspacemacs/user-config ()
+  "Configuration for user code:
+This function is called at the very end of Spacemacs startup, after layer
+configuration.
+Put your configuration code here, except for variables that should be set
+before packages are loaded."
+
+  (setq
+   ivy-initial-inputs-alist nil
+   bidi-inhibit-bpa t)
+
+  (evil-define-key 'normal global-map (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body)
+  (evil-define-key 'normal global-map (kbd "M-SPC") #'ivy-switch-buffer)
+  (define-key global-map (kbd "M-SPC") #'ivy-switch-buffer)
 
   (eval-after-load 'magithub
     '(progn
@@ -565,10 +599,11 @@ layers configuration. You are free to put any user code."
        (define-key magit-magithub-comment-section-map (kbd "RET") #'magithub-comment-view)
        ))
 
-  (beacon-mode 1)
+  ;; (beacon-mode 1)
 
   (with-eval-after-load 'magit
-    (magit-auto-revert-mode 1))
+    (magit-auto-revert-mode 1)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-tags-header))
 
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
 
@@ -784,13 +819,15 @@ layers configuration. You are free to put any user code."
     )
 
   (with-eval-after-load 'ivy-posframe
+
     (set-face-attribute 'ivy-posframe-border nil :background "black")
 
     (setq ivy-posframe-border-width 10)
 
     (setq ivy-posframe-display-functions-alist
-          '((swiper                        . nil)
-            (spacemacs/search-project-auto . nil)
+          '((swiper                        . ivy-display-function-fallback)
+            (spacemacs/search-project-auto . ivy-display-function-fallback)
+            (counsel-rg                    . ivy-display-function-fallback)
             (complete-symbol               . ivy-posframe-display-at-point)
             (t                             . ivy-posframe-display-at-frame-center))))
 
@@ -896,6 +933,8 @@ Interactively also sends a terminating newline."
 
   (remove-hook 'ruby-mode-hook 'robe-mode)
 
+  (remove-hook 'projectile-rails-mode-hook 'projectile-rails-expand-snippet-maybe)
+
   (add-hook 'js2-mode-hook
             (lambda ()
               (push '("function" . ?λ) prettify-symbols-alist)))
@@ -906,9 +945,6 @@ Interactively also sends a terminating newline."
   ;;   (web-mode-reload))
 
   ;; (evil-define-key 'normal web-mode-map (kbd "p") #'asok/paste-and-reload)
-
-  (evil-define-key 'normal global-map (kbd "M-SPC") #'ivy-switch-buffer)
-  (define-key global-map (kbd "M-SPC") #'ivy-switch-buffer)
 
   (with-eval-after-load 'rjsx-mode
     (add-hook 'rjsx-mode-hook 'flycheck-mode)
@@ -934,6 +970,9 @@ Interactively also sends a terminating newline."
   (require 'all-the-icons-ivy)
   (all-the-icons-ivy-setup)
 
+  (add-to-list 'custom-theme-load-path "~/projects/solo-jazz-emacs-theme/")
+  (load-theme 'jazz t)
+
   ;; (defadvice find-file (before make-directory-maybe (filename &optional wildcards) activate)
   ;;   "Create parent directory if not exists while visiting file."
   ;;   (unless (file-exists-p filename)
@@ -951,6 +990,16 @@ Interactively also sends a terminating newline."
      'doom-city-lights
      '(ivy-current-match ((t (:underline t))))
      '(font-lock-variable-name-face ((t (:foreground "#5EC4FF"))))))
+
+  ;; Not working...
+  (with-eval-after-load 'solo-jazz-theme
+    (solo-jazz-with-color-variables
+      (custom-theme-set-faces
+      'solo-jazz
+      `(font-lock-type-face        	 ((t (:foreground ,solo-jazz-pink))))
+      `(font-lock-function-name-face ((t (:foreground ,solo-jazz-blue))))
+      ))
+    )
 
   (with-eval-after-load 'spacemacs-light
     (custom-theme-set-faces
@@ -999,7 +1048,7 @@ Returns non-nil if any such excessive-length line is detected."
   ;;   (add-to-list 'company-backends #'company-tabnine))
 
   (defun asok/setup-ruby ()
-    (setq ruby-align-to-stmt-keywords '(if begin def)))
+    (setq ruby-align-to-stmt-keywords '(begin def)))
 
   (add-hook 'ruby-mode-hook #'asok/setup-ruby)
 
@@ -1071,6 +1120,25 @@ Returns non-nil if any such excessive-length line is detected."
     (compile (concat "yarn test " (buffer-file-name))))
 
   (evil-define-key 'normal js2-mode-map (kbd ", tt") 'asok/yarn-test-file)
+
+  (nvm-use "v14.8.0")
+
+  (savehist-mode -1) ; causes slowness
+
+  (require 'counsel)
+  ;; (setq ivy-prescient-sort-commands '(:not
+  ;;                                     swiper
+  ;;                                     swiper-isearch
+  ;;                                     counsel-grep-or-swiper
+  ;;                                     counsel-yank-pop
+  ;;                                     ivy-switch-buffer))
+  ;; (setq prescient-filter-method '(literal regexp initialism))
+  ;; (ivy-prescient-mode +1)
+  (highlight-parentheses-mode -1)
+
+  ;; OSX specific
+  (when-let ((git (executable-find "git")))
+    (setq magit-git-executable git))
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -1177,8 +1245,10 @@ This function is called at the very end of Spacemacs initialization."
    ["#0d0f11" "#DF8C8C" "#A8CE93" "#DADA93" "#83AFE5" "#c9b4cf" "#7FC1CA" "#e6eef3"])
  '(ansi-term-color-vector
    [unspecified "#1F1611" "#660000" "#144212" "#EFC232" "#5798AE" "#BE73FD" "#93C1BC" "#E6E1DC"] t)
+ '(auto-insert-mode t)
+ '(awesome-tray-mode-line-active-color "#2fafff")
+ '(awesome-tray-mode-line-inactive-color "#2f2f2f")
  '(beacon-color "#d33682")
- '(beacon-mode t)
  '(company-quickhelp-color-background "#b0b0b0")
  '(company-quickhelp-color-foreground "#232333")
  '(compilation-message-face 'default)
@@ -1187,7 +1257,7 @@ This function is called at the very end of Spacemacs initialization."
  '(cua-overwrite-cursor-color "#b58900")
  '(cua-read-only-cursor-color "#859900")
  '(custom-safe-themes
-   '("e1ecb0536abec692b5a5e845067d75273fe36f24d01210bf0aa5842f2a7e029f" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" "93ed23c504b202cf96ee591138b0012c295338f38046a1f3c14522d4a64d7308" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" "615123f602c56139c8170c153208406bf467804785007cdc11ba73d18c3a248b" "a83f05e5e2f2538376ea2bfdf9e3cd8b7f7593b16299238c1134c1529503fa88" "a339f231e63aab2a17740e5b3965469e8c0b85eccdfb1f9dbd58a30bdad8562b" "a2e7b508533d46b701ad3b055e7c708323fb110b6676a8be458a758dd8f24e27" "5999e12c8070b9090a2a1bbcd02ec28906e150bb2cdce5ace4f965c76cf30476" "d320493111089afba1563bc3962d8ea1117dd2b3abb189aeebdc8c51b5517ddb" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "44eec3c3e6e673c0d41b523a67b64c43b6e38f8879a7969f306604dcf908832c" "5b24babd20e58465e070a8d7850ec573fe30aca66c8383a62a5e7a3588db830b" "72a81c54c97b9e5efcc3ea214382615649ebb539cb4f2fe3a46cd12af72c7607" "5e2dc1360a92bb73dafa11c46ba0f30fa5f49df887a8ede4e3533c3ab6270e08" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "c1390663960169cd92f58aad44ba3253227d8f715c026438303c09b9fb66cdfb" "9b59e147dbbde5e638ea1cde5ec0a358d5f269d27bd2b893a0947c4a867e14c1" "2dd32048690787844d8cba601ed3dd8b2f419e9bd985898d0c3792671a05b96b" "6bb466c89b7e3eedc1f19f5a0cfa53be9baf6077f4d4a6f9b5d087f0231de9c8" "f782ed87369a7d568cee28d14922aa6d639f49dd676124d817dd82c8208985d0" "9e147cee63e1a2a6b16021e0645bc66c633c42b849e78b8e295df4b7fe55c56a" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "590759adc4a5bf7a183df81654cce13b96089e026af67d92b5eec658fb3fe22f" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" "ce557950466bf42096853c6dac6875b9ae9c782b8665f62478980cc5e3b6028d" "d79ece4768dfc4bab488475b85c2a8748dcdc3690e11a922f6be5e526a20b485" "d09467d742f713443c7699a546c0300db1a75fed347e09e3f178ab2f3aa2c617" "72c7c8b431179cbcfcea4193234be6a0e6916d04c44405fc87905ae16bed422a" "8abee8a14e028101f90a2d314f1b03bed1cde7fd3f1eb945ada6ffc15b1d7d65" "cedd3b4295ac0a41ef48376e16b4745c25fa8e7b4f706173083f16d5792bb379" "5c6d40ef6e7bbe9e83dc0e32db794c7e9a6a0d9eb7d6a874aaf9744c053842b4" "19ba41b6dc0b5dd34e1b8628ad7ae47deb19f968fe8c31853d64ea8c4df252b8" "f04122bbc305a202967fa1838e20ff741455307c2ae80a26035fbf5d637e325f" "3632cf223c62cb7da121be0ed641a2243f7ec0130178722554e613c9ab3131de" "66132890ee1f884b4f8e901f0c61c5ed078809626a547dbefbb201f900d03fd8" "d8f76414f8f2dcb045a37eb155bfaa2e1d17b6573ed43fb1d18b936febc7bbc2" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "5f8f1e226274b73f6e706431399a597dbfd64db34f3fba56a6ccf57d148a0e01" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "51e228ffd6c4fff9b5168b31d5927c27734e82ec61f414970fc6bcce23bc140d" "68d36308fc6e7395f7e6355f92c1dd9029c7a672cbecf8048e2933a053cf27e6" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default))
+   '("2a998a3b66a0a6068bcb8b53cd3b519d230dd1527b07232e54c8b9d84061d48d" "0c3b1358ea01895e56d1c0193f72559449462e5952bded28c81a8e09b53f103f" "bc4c89a7b91cfbd3e28b2a8e9e6750079a985237b960384f158515d32c7f0490" "d2bd16a8bcf295dce0b70e1d2b5c17bb34cb28224a86ee770d56e6c22a565013" "cea3ec09c821b7eaf235882e6555c3ffa2fd23de92459751e18f26ad035d2142" "6b80b5b0762a814c62ce858e9d72745a05dd5fc66f821a1c5023b4f2a76bc910" "bf798e9e8ff00d4bf2512597f36e5a135ce48e477ce88a0764cfb5d8104e8163" "730a87ed3dc2bf318f3ea3626ce21fb054cd3a1471dcd59c81a4071df02cb601" "13a8eaddb003fd0d561096e11e1a91b029d3c9d64554f8e897b2513dbf14b277" "37144b437478e4c235824f0e94afa740ee2c7d16952e69ac3c5ed4352209eefb" "76bfa9318742342233d8b0b42e824130b3a50dcc732866ff8e47366aed69de11" "987b709680284a5858d5fe7e4e428463a20dfabe0a6f2a6146b3b8c7c529f08b" "37a4701758378c93159ad6c7aceb19fd6fb523e044efe47f2116bc7398ce20c9" "621595cbf6c622556432e881945dda779528e48bb57107b65d428e61a8bb7955" "bf387180109d222aee6bb089db48ed38403a1e330c9ec69fe1f52460a8936b66" "2f1518e906a8b60fac943d02ad415f1d8b3933a5a7f75e307e6e9a26ef5bf570" "8d805143f2c71cfad5207155234089729bb742a1cb67b7f60357fdd952044315" "fc6697788f00629cd01f4d2cc23f1994d08edb3535e4c0facef6b7247b41f5c7" "cd7ffd461946d2a644af8013d529870ea0761dccec33ac5c51a7aaeadec861c2" "89536596ee5bdc5ef9ea3d3d5b515ea616285fa9274c836263024f1993f6b3dd" "c48551a5fb7b9fc019bf3f61ebf14cf7c9cdca79bcb2a4219195371c02268f11" "58c6711a3b568437bab07a30385d34aacf64156cc5137ea20e799984f4227265" "e9776d12e4ccb722a2a732c6e80423331bcb93f02e089ba2a4b02e85de1cf00e" "7f1d414afda803f3244c6fb4c2c64bea44dac040ed3731ec9d75275b9e831fe5" "2809bcb77ad21312897b541134981282dc455ccd7c14d74cc333b6e549b824f3" "c83c095dd01cde64b631fb0fe5980587deec3834dc55144a6e78ff91ebc80b19" "e1ef2d5b8091f4953fe17b4ca3dd143d476c106e221d92ded38614266cea3c8b" "7a994c16aa550678846e82edc8c9d6a7d39cc6564baaaacc305a3fdc0bd8725f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "26b0ca3a8d8bc4bf366d01c9acca6da0c31cf28543c847fe99d0bace546aed6d" "4138944fbed88c047c9973f68908b36b4153646a045648a22083bd622d1e636d" "450f3382907de50be905ae8a242ecede05ea9b858a8ed3cc8d1fbdf2d57090af" "72085337718a3a9b4a7d8857079aa1144ea42d07a4a7696f86627e46ac52f50b" "afd761c9b0f52ac19764b99d7a4d871fc329f7392dfc6cd29710e8209c691477" "392395ee6e6844aec5a76ca4f5c820b97119ddc5290f4e0f58b38c9748181e8d" "8dce5b23232d0a490f16d62112d3abff6babeef86ae3853241a85856f9b0a6e7" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" "93ed23c504b202cf96ee591138b0012c295338f38046a1f3c14522d4a64d7308" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" "dde8c620311ea241c0b490af8e6f570fdd3b941d7bc209e55cd87884eb733b0e" "f7216d3573e1bd2a2b47a2331f368b45e7b5182ddbe396d02b964b1ea5c5dc27" "f2927d7d87e8207fa9a0a003c0f222d45c948845de162c885bf6ad2a255babfd" "c4bdbbd52c8e07112d1bfd00fee22bf0f25e727e95623ecb20c4fa098b74c1bd" "8a97050c9dd0af1cd8c3290b061f4b6032ccf2044ddc4d3c2c39e516239b2463" "a2e7b508533d46b701ad3b055e7c708323fb110b6676a8be458a758dd8f24e27" "5999e12c8070b9090a2a1bbcd02ec28906e150bb2cdce5ace4f965c76cf30476" "d320493111089afba1563bc3962d8ea1117dd2b3abb189aeebdc8c51b5517ddb" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "44eec3c3e6e673c0d41b523a67b64c43b6e38f8879a7969f306604dcf908832c" "5b24babd20e58465e070a8d7850ec573fe30aca66c8383a62a5e7a3588db830b" "72a81c54c97b9e5efcc3ea214382615649ebb539cb4f2fe3a46cd12af72c7607" "5e2dc1360a92bb73dafa11c46ba0f30fa5f49df887a8ede4e3533c3ab6270e08" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "c1390663960169cd92f58aad44ba3253227d8f715c026438303c09b9fb66cdfb" "9b59e147dbbde5e638ea1cde5ec0a358d5f269d27bd2b893a0947c4a867e14c1" "2dd32048690787844d8cba601ed3dd8b2f419e9bd985898d0c3792671a05b96b" "6bb466c89b7e3eedc1f19f5a0cfa53be9baf6077f4d4a6f9b5d087f0231de9c8" "f782ed87369a7d568cee28d14922aa6d639f49dd676124d817dd82c8208985d0" "9e147cee63e1a2a6b16021e0645bc66c633c42b849e78b8e295df4b7fe55c56a" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "590759adc4a5bf7a183df81654cce13b96089e026af67d92b5eec658fb3fe22f" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" "ce557950466bf42096853c6dac6875b9ae9c782b8665f62478980cc5e3b6028d" "d79ece4768dfc4bab488475b85c2a8748dcdc3690e11a922f6be5e526a20b485" "d09467d742f713443c7699a546c0300db1a75fed347e09e3f178ab2f3aa2c617" "72c7c8b431179cbcfcea4193234be6a0e6916d04c44405fc87905ae16bed422a" "8abee8a14e028101f90a2d314f1b03bed1cde7fd3f1eb945ada6ffc15b1d7d65" "cedd3b4295ac0a41ef48376e16b4745c25fa8e7b4f706173083f16d5792bb379" "5c6d40ef6e7bbe9e83dc0e32db794c7e9a6a0d9eb7d6a874aaf9744c053842b4" "19ba41b6dc0b5dd34e1b8628ad7ae47deb19f968fe8c31853d64ea8c4df252b8" "f04122bbc305a202967fa1838e20ff741455307c2ae80a26035fbf5d637e325f" "3632cf223c62cb7da121be0ed641a2243f7ec0130178722554e613c9ab3131de" "66132890ee1f884b4f8e901f0c61c5ed078809626a547dbefbb201f900d03fd8" "d8f76414f8f2dcb045a37eb155bfaa2e1d17b6573ed43fb1d18b936febc7bbc2" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "5f8f1e226274b73f6e706431399a597dbfd64db34f3fba56a6ccf57d148a0e01" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "51e228ffd6c4fff9b5168b31d5927c27734e82ec61f414970fc6bcce23bc140d" "68d36308fc6e7395f7e6355f92c1dd9029c7a672cbecf8048e2933a053cf27e6" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default))
  '(diary-entry-marker 'font-lock-variable-name-face)
  '(emms-mode-line-icon-image-cache
    '(image :type xpm :ascent center :data "/* XPM */
@@ -1218,8 +1288,13 @@ static char *note[] = {
  '(fci-rule-color "#d9d9d9" t)
  '(flycheck-color-mode-line-face-to-color 'mode-line-buffer-id)
  '(flycheck-javascript-flow-args nil)
+ '(flymake-error-bitmap '(flymake-double-exclamation-mark modus-theme-fringe-red))
+ '(flymake-note-bitmap '(exclamation-mark modus-theme-fringe-cyan))
+ '(flymake-warning-bitmap '(exclamation-mark modus-theme-fringe-yellow))
  '(frame-background-mode 'light)
  '(fringe-mode 6 nil (fringe))
+ '(global-auto-revert-mode t)
+ '(global-hl-line-mode t)
  '(gnus-logo-colors '("#1ec1c4" "#bababa") t)
  '(gnus-mode-line-image-cache
    '(image :type xpm :ascent center :data "/* XPM */
@@ -1245,6 +1320,8 @@ static char *gnus-pointer[] = {
 \"###########.######\" };") t)
  '(highlight-changes-colors '("#d33682" "#6c71c4"))
  '(highlight-indent-guides-auto-enabled nil)
+ '(highlight-parentheses-background-colors '("#2492db" "#95a5a6" nil))
+ '(highlight-parentheses-colors '("#2aa198" "#b58900" "#268bd2" "#6c71c4" "#859900"))
  '(highlight-symbol-colors
    (--map
     (solarized-color-blend it "#002b36" 0.25)
@@ -1263,8 +1340,6 @@ static char *gnus-pointer[] = {
    '("#7B6000" "#8B2C02" "#990A1B" "#93115C" "#3F4D91" "#00629D" "#00736F" "#546E00"))
  '(hl-fg-colors
    '("#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36"))
- '(hl-paren-background-colors '("#2492db" "#95a5a6" nil))
- '(hl-paren-colors '("#2aa198" "#b58900" "#268bd2" "#6c71c4" "#859900"))
  '(hl-sexp-background-color "#efebe9")
  '(hl-todo-keyword-faces
    '(("TODO" . "#dc752f")
@@ -1282,6 +1357,11 @@ static char *gnus-pointer[] = {
      ("FIXME" . "#dc752f")
      ("XXX" . "#dc752f")
      ("XXXX" . "#dc752f")))
+ '(ibuffer-deletion-face 'modus-theme-mark-del)
+ '(ibuffer-filter-group-name-face 'modus-theme-mark-symbol)
+ '(ibuffer-marked-face 'modus-theme-mark-sel)
+ '(ibuffer-title-face 'modus-theme-header)
+ '(ivy-posframe-mode t nil (ivy-posframe))
  '(jdee-db-active-breakpoint-face-colors (cons "#0d0f11" "#7FC1CA"))
  '(jdee-db-requested-breakpoint-face-colors (cons "#0d0f11" "#A8CE93"))
  '(jdee-db-spec-breakpoint-face-colors (cons "#0d0f11" "#899BA6"))
@@ -1294,7 +1374,7 @@ static char *gnus-pointer[] = {
    '("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4"))
  '(objed-cursor-color "#c82829")
  '(package-selected-packages
-   '(magit-gh-pulls lenlen-theme github-search github-clone github-browse-file gist gh marshal logito pcache winum white-sand-theme wgrep vlf toml-mode tide typescript-mode sunburn-theme smex oauth2 ruby-hash-syntax rjsx-mode rebecca-theme racer powerthesaurus jeison phpunit phpcbf php-extras php-auto-yasnippets org-category-capture org-mime ob-restclient ob-http nubox nord-theme nodejs-repl nginx-mode madhat2r-theme ivy-posframe posframe ivy-hydra parent-mode helpful elisp-refs loop haml-mode ham-mode html-to-markdown fuzzy flymd flycheck-rust pos-tip flycheck-flow flycheck-credo flx exotica-theme evil-vimish-fold vimish-fold transient evil-lion goto-chg es-mode spark elfeed-web elfeed-org elfeed-goodies ace-jump-mode noflet elfeed doom-themes dockerfile-mode docker tablist docker-tramp json-snatcher diminish dash-at-point autothemer csv-mode counsel-dash dash-docs company-tabnine unicode-escape names company-restclient restclient know-your-http-well peg lv eval-sexp-fu sesman queue parseedn parseclj a cargo rust-mode better-jumper all-the-icons-dired all-the-icons memoize log4e gntp pkg-info epl powershell inflections seq birds-of-paradise-plus-theme-theme sourcerer-theme pug-mode ob-elixir org minitest ivy-purpose window-purpose imenu-list hide-comnt ht rake evil-unimpaired drupal-mode counsel-projectile counsel swiper undo-tree ivy php-mode rainbow-mode flycheck-elixir-dogma metalheart-theme ruby-end org-projectile git-link flycheck-mix darkokai-theme emojify dash-functional iedit highlight fzf sql-indent wttrin alchemist elixir-mode jinja2-mode ansible-doc ansible tramp-term ssh powerline slack circe request websocket ranger js2-mode projectile flycheck magit magit-popup git-commit with-editor smartparens web-completion-data tern hydra edn multiple-cursors paredit cider spinner clojure-mode packed avy auto-complete anzu markdown-mode yasnippet company gitignore-mode helm popup helm-core async json-reformat alert f s dash package-build bind-key bind-map evil org-download skewer-mode simple-httpd evil-visual-mark-mode dumb-jump shut-up ansi commander ctable concurrent deferred ert-runner epc sanityinc-tomorrow-night-theme-theme inf-ruby ac-inf-ruby evil-jumper eyebrowse column-enforce-mode zonokai-theme zenburn-theme zen-and-art-theme zeal-at-point yaml-mode xterm-color ws-butler window-numbering which-key wgrep-ag web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stekene-theme spacemacs-theme spaceline spacegray-theme soothe-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smooth-scrolling smeargle slim-mode shell-pop seti-theme scss-mode sass-mode rvm ruby-tools ruby-test-mode rubocop rspec-mode robe reverse-theme restart-emacs rbenv rainbow-delimiters railscasts-theme quelpa purple-haze-theme projectile-rails professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pastels-on-dark-theme paradox page-break-lines orgit organic-green-theme org-repo-todo org-present org-pomodoro org-plus-contrib org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme leuven-theme less-css-mode json-mode js2-refactor js-doc jbeans-theme jazz-theme jade-mode ir-black-theme inkpot-theme info+ indent-guide ido-vertical-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-dash helm-css-scss helm-company helm-c-yasnippet helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gmail-message-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger gh-md gandalf-theme fullframe flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator feature-mode farmhouse-theme fancy-battery expand-region exec-path-from-shell evil-visualstar evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu espresso-theme eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dracula-theme django-theme define-word darktooth-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme company-web company-tern company-statistics company-quickhelp colorsarenice-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode cider-eval-sexp-fu chruby cherry-blossom-theme busybee-theme bundler buffer-move bubbleberry-theme bracketed-paste birds-of-paradise-plus-theme beacon badwolf-theme auto-yasnippet auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent ag afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))
+   '(base16-theme mini-frame consult-selectrum ivy-prescient yapfify stickyfunc-enhance pytest pyenv-mode py-isort pippel pipenv pyvenv pip-requirements lsp-python-ms live-py-mode importmagic helm-pydoc helm-gtags helm-cscope ggtags cython-mode counsel-gtags company-anaconda blacken anaconda-mode pythonic magit-gh-pulls lenlen-theme github-search github-clone github-browse-file gist gh marshal logito pcache winum white-sand-theme wgrep vlf toml-mode tide typescript-mode sunburn-theme smex oauth2 ruby-hash-syntax rjsx-mode rebecca-theme racer powerthesaurus jeison phpunit phpcbf php-extras php-auto-yasnippets org-category-capture org-mime ob-restclient ob-http nubox nord-theme nodejs-repl nginx-mode madhat2r-theme ivy-posframe posframe ivy-hydra parent-mode helpful elisp-refs loop haml-mode ham-mode html-to-markdown fuzzy flymd flycheck-rust pos-tip flycheck-flow flycheck-credo flx exotica-theme evil-vimish-fold vimish-fold transient evil-lion goto-chg es-mode spark elfeed-web elfeed-org elfeed-goodies ace-jump-mode noflet elfeed doom-themes dockerfile-mode docker tablist docker-tramp json-snatcher diminish dash-at-point autothemer csv-mode counsel-dash dash-docs company-tabnine unicode-escape names company-restclient restclient know-your-http-well peg lv eval-sexp-fu sesman queue parseedn parseclj a cargo rust-mode better-jumper all-the-icons-dired all-the-icons memoize log4e gntp pkg-info epl powershell inflections seq birds-of-paradise-plus-theme-theme sourcerer-theme pug-mode ob-elixir org minitest ivy-purpose window-purpose imenu-list hide-comnt ht rake evil-unimpaired drupal-mode counsel-projectile counsel swiper undo-tree ivy php-mode rainbow-mode flycheck-elixir-dogma metalheart-theme ruby-end org-projectile git-link flycheck-mix darkokai-theme emojify dash-functional iedit highlight fzf sql-indent wttrin alchemist elixir-mode jinja2-mode ansible-doc ansible tramp-term ssh powerline slack circe request websocket ranger js2-mode projectile flycheck magit magit-popup git-commit with-editor smartparens web-completion-data tern hydra edn multiple-cursors paredit cider spinner clojure-mode packed avy auto-complete anzu markdown-mode yasnippet company gitignore-mode helm popup helm-core async json-reformat alert f s dash package-build bind-key bind-map evil org-download skewer-mode simple-httpd evil-visual-mark-mode dumb-jump shut-up ansi commander ctable concurrent deferred ert-runner epc sanityinc-tomorrow-night-theme-theme inf-ruby ac-inf-ruby evil-jumper eyebrowse column-enforce-mode zonokai-theme zenburn-theme zen-and-art-theme zeal-at-point yaml-mode xterm-color ws-butler window-numbering which-key wgrep-ag web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stekene-theme spacemacs-theme spaceline spacegray-theme soothe-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smooth-scrolling smeargle slim-mode shell-pop seti-theme scss-mode sass-mode rvm ruby-tools ruby-test-mode rubocop rspec-mode robe reverse-theme restart-emacs rbenv rainbow-delimiters railscasts-theme quelpa purple-haze-theme projectile-rails professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pastels-on-dark-theme paradox page-break-lines orgit organic-green-theme org-repo-todo org-present org-pomodoro org-plus-contrib org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme leuven-theme less-css-mode json-mode js2-refactor js-doc jbeans-theme jazz-theme jade-mode ir-black-theme inkpot-theme info+ indent-guide ido-vertical-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-dash helm-css-scss helm-company helm-c-yasnippet helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gmail-message-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger gh-md gandalf-theme fullframe flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator feature-mode farmhouse-theme fancy-battery expand-region exec-path-from-shell evil-visualstar evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu espresso-theme eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dracula-theme django-theme define-word darktooth-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme company-web company-tern company-statistics company-quickhelp colorsarenice-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode cider-eval-sexp-fu chruby cherry-blossom-theme busybee-theme bundler buffer-move bubbleberry-theme bracketed-paste birds-of-paradise-plus-theme beacon badwolf-theme auto-yasnippet auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent ag afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))
  '(paradox-github-token t)
  '(pdf-view-midnight-colors '("#b2b2b2" . "#292b2e"))
  '(pos-tip-background-color "#073642")
@@ -1302,8 +1382,7 @@ static char *gnus-pointer[] = {
  '(rustic-ansi-faces
    ["#ffffff" "#c82829" "#718c00" "#eab700" "#3e999f" "#c9b4cf" "#8abeb7" "#4d4d4c"])
  '(safe-local-variable-values
-   '((ruby-backend . robe)
-     (eval setq cider-cljs-lein-repl "(do (use 'figwheel-sidecar.repl-api) (start-figwheel!) (cljs-repl))")
+   '((eval setq cider-cljs-lein-repl "(do (use 'figwheel-sidecar.repl-api) (start-figwheel!) (cljs-repl))")
      (elixir-enable-compilation-checking . t)
      (elixir-enable-compilation-checking)
      (flycheck-disabled-checkers emacs-lisp-checkdoc)))
@@ -1339,6 +1418,7 @@ static char *gnus-pointer[] = {
  '(vc-annotate-very-old-color nil)
  '(weechat-color-list
    '(unspecified "#002b36" "#073642" "#990A1B" "#dc322f" "#546E00" "#859900" "#7B6000" "#b58900" "#00629D" "#268bd2" "#93115C" "#d33682" "#00736F" "#2aa198" "#839496" "#657b83"))
+ '(which-key-posframe-mode t)
  '(window-divider-mode nil)
  '(xterm-color-names
    ["#073642" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#eee8d5"])
