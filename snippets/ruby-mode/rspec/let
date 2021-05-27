@@ -3,4 +3,4 @@
 # key: let
 # group: rspec
 # --
-let(:$1){ $0 }
+let(:$1) { $0 }
