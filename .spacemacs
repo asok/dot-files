@@ -68,19 +68,15 @@ This function should only modify configuration layer settings."
      markdown
      dash
      themes-megapack
-     (lsp
-      :variables
+     (lsp :variables
+          lsp-ui                         t
           lsp-ui-sideline-enable         t
-          lsp-ui-doc-enable              t
-          lsp-enable-symbol-highlighting nil
-          ;; lsp-ui-remap-xref-keybindings t
-          )
-     ;; lsp
+          lsp-ui-doc-enable              nil
+          lsp-enable-symbol-highlighting nil)
      (ruby :variables
            ruby-version-manager 'chruby
            ruby-test-runner     'rspec
-           ruby-backend         'lsp
-           )
+           ruby-backend         'lsp)
      ruby-on-rails
      (shell :variables
             shell-default-term-shell "/bin/zsh"
@@ -711,7 +707,7 @@ in `dotspacemacs/user-config'."
                              (setq-local compilation-always-kill t))
                           '(rspec-mode-hook rspec-verifiable-mode-hook rspec-compilation-mode-hook))
 
-  (eval-after-load 'rspec-mode
+  (with-eval-after-load 'rspec-mode
     '(rspec-install-snippets)
 
     (defun asok/rspec-toggle-spec-and-target (fn)
@@ -788,17 +784,12 @@ before packages are loaded."
         ivy-initial-inputs-alist nil
         bidi-inhibit-bpa t)
 
-
-       (eval-after-load 'magithub
+       (with-eval-after-load 'magithub
          '(progn
             (require 'magit-popup)
-            ;; (magithub-feature-autoinject t))
             (magithub-feature-autoinject '(commit-browse completion pull-requests-section))
             (define-key magit-magithub-comment-section-map (kbd "SPC") nil)
-            (define-key magit-magithub-comment-section-map (kbd "RET") #'magithub-comment-view)
-            ))
-
-       ;; (beacon-mode 1)
+            (define-key magit-magithub-comment-section-map (kbd "RET") #'magithub-comment-view)))
 
        (with-eval-after-load 'magit
          (magit-auto-revert-mode 1)
@@ -833,8 +824,7 @@ before packages are loaded."
          (define-key global-map (kbd "s-<right>")  #'switch-to-next-buffer)
 
          (add-hook 'git-commit-mode-hook 'evil-insert-state)
-         (evil-set-initial-state 'magit-log-edit-mode 'insert)
-         )
+         (evil-set-initial-state 'magit-log-edit-mode 'insert))
 
 
        (spacemacs/set-leader-keys
@@ -872,7 +862,7 @@ before packages are loaded."
          (sp-end-of-sexp)
          (evil-insert-state))
 
-       (eval-after-load 'smartparens
+       (with-eval-after-load 'smartparens
          '(progn
             (evil-define-command asok/sp-change-line-command ()
               :repeat t
@@ -907,20 +897,6 @@ before packages are loaded."
        (with-eval-after-load 'slim-mode
          (add-to-list 'auto-mode-alist '("\\.slime\\'" . slim-mode)))
 
-       ;; (setq spacemacs-default-jump-handlers '(dumb-jump-go evil-goto-definition))
-
-       (with-eval-after-load 'ivy
-         (evil-add-hjkl-bindings ivy-occur-grep-mode-map 'normal
-           (kbd "RET") 'ivy-occur-press-and-switch
-           (kbd "C-d") 'ivy-occur-delete-candidate)
-
-         (ivy-set-actions
-          'counsel-find-file
-          `((,(propertize "delete" 'face 'font-lock-warning-face)
-             (lambda (x) (delete-file (expand-file-name x ivy--directory))))))
-
-         (ivy-posframe-mode +1))
-
        (defun asok/sp-wrap-with-curly-braces ()
          (interactive)
          (sp-wrap-with-pair "{")
@@ -942,7 +918,6 @@ before packages are loaded."
          "k\"" #'asok/sp-wrap-with-quotes)
 
        (fullframe magit-status magit-mode-quit-window)
-       ;; (fullframe magit-log magit-mode-quit-window)
        (fullframe wttrin wttrin-exit)
 
        (add-hook 'eval-expression-minibuffer-setup-hook #'eldoc-mode)
@@ -952,15 +927,7 @@ before packages are loaded."
            (before theme-dont-propagate activate)
          (mapcar #'disable-theme custom-enabled-themes))
 
-       ;; (defadvice inf-ruby-switch-from-compilation
-       ;;     (after asok/switch-inf-ruby-compilation-buffer activate)
-       ;;   (switch-to-buffer-other-window (current-buffer)))
-
-       ;; (defun asok/detect-react-buffer ()
-       ;;   (string-match-p ".*^import React" (buffer-string)))
-
        (add-to-list 'magic-mode-alist '("[\s\n]import React" . rjsx-mode))
-
 
        (defun asok/bundle--around (fun &rest args)
          "Run FUN from the project root."
@@ -1046,8 +1013,6 @@ before packages are loaded."
                  (complete-symbol               . ivy-posframe-display-at-point)
                  (t                             . ivy-posframe-display-at-frame-center))))
 
-       ;; (ivy-posframe-mode)
-
        (defun asok/align-hash ()
          (interactive)
          (align-regexp (region-beginning) (region-end) "\\(\\s-*\\)=>"))
@@ -1095,11 +1060,6 @@ Interactively also sends a terminating newline."
 
          (evil-define-key 'insert vterm-mode-map (kbd "C-r") #'asok/vterm-c-r))
 
-       (defun asok/setup-company-lsp-backends ()
-         (setq-local company-backends '((company-lsp company-dabbrev))))
-
-       ;; (add-hook 'ruby-mode-hook #'asok/setup-company-lsp-backends)
-
        (with-eval-after-load 'projectile-rails
          (setq projectile-rails-expand-snippet-with-magic-comment t)
 
@@ -1142,8 +1102,6 @@ Interactively also sends a terminating newline."
          (spacemacs|define-jump-handlers web-mode projectile-rails-goto-file-at-point)
          (spacemacs|define-jump-handlers haml-mode projectile-rails-goto-file-at-point)
          (spacemacs|define-jump-handlers slim-mode projectile-rails-goto-file-at-point)
-
-         ;; (add-hook 'projectile-rails-mode-hook #'chruby-use-corresponding)
          )
 
        (remove-hook 'ruby-mode-hook 'robe-mode)
@@ -1153,13 +1111,6 @@ Interactively also sends a terminating newline."
        (add-hook 'js2-mode-hook
                  (lambda ()
                    (push '("function" . ?λ) prettify-symbols-alist)))
-
-       ;; (defun asok/paste-and-reload ()
-       ;;   (interactive)
-       ;;   (evil-paste-after)
-       ;;   (web-mode-reload))
-
-       ;; (evil-define-key 'normal web-mode-map (kbd "p") #'asok/paste-and-reload)
 
        (with-eval-after-load 'rjsx-mode
          (add-hook 'rjsx-mode-hook 'flycheck-mode)
@@ -1174,10 +1125,6 @@ Interactively also sends a terminating newline."
          (setq counsel-grep-base-command
                "rg -i -M 120 --no-heading --line-number --color never '%s' %s"))
 
-       ;; (spacemacs|disable-company ruby-mode)
-       ;; (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-       ;; (add-to-list 'default-frame-alist '(ns-appearance . light))
-
        (with-eval-after-load 'gotham-theme
          (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
 
@@ -1185,14 +1132,12 @@ Interactively also sends a terminating newline."
        (require 'all-the-icons-ivy)
        (all-the-icons-ivy-setup)
 
-       ;; (defadvice find-file (before make-directory-maybe (filename &optional wildcards) activate)
-       ;;   "Create parent directory if not exists while visiting file."
-       ;;   (unless (file-exists-p filename)
-       ;;     (let ((dir (file-name-directory filename)))
-       ;;       (unless (file-exists-p dir)
-       ;;         (make-directory dir)))))
        (show-smartparens-global-mode -1)
        (global-highlight-parentheses-mode +1)
+
+       ;; Not working...
+       (require 'ivy-posframe)
+       (ivy-posframe-mode +1)
 
        (defvar so-long-threshold 500)
        (defvar so-long-max-lines 5)
@@ -1251,26 +1196,11 @@ Returns non-nil if any such excessive-length line is detected."
          (when (file-exists-p "~/projects/gabi/emacs-slack.el")
            (load "~/projects/gabi/emacs-slack.el")))
 
-       (with-eval-after-load 'eshell
-         ;; (eshell/alias "be" "bundle exec \$*")
-         ;; (eshell/alias "cdpr" "cd (projectile-rails-root)")
-         )
-
-       ;; (with-eval-after-load 'company
-       ;;   (add-to-list 'company-backends #'company-tabnine))
-
        (defun asok/setup-ruby ()
          (setq ruby-align-to-stmt-keywords '(begin def))
-         ;; (robe-mode -1)
-         ;; (company-mode -1)
-         ;; (remove-hook 'ruby-mode-hook 'spacemacs//ruby-setup-backend)
 
          (spacemacs/set-leader-keys-for-major-mode 'ruby-mode
-           "rl"  'multi-line)
-
-         ;; (set (make-local-variable 'company-backends-ruby-mode)
-         ;;      (remq 'company-robe company-backends))
-         )
+           "rl"  'multi-line))
 
        (add-hook 'ruby-mode-hook #'asok/setup-ruby 99)
 
@@ -1354,19 +1284,9 @@ Returns non-nil if any such excessive-length line is detected."
 
        (evil-define-key 'normal js2-mode-map (kbd ", tt") 'asok/yarn-test-file)
 
-       ;; (nvm-use "v14.8.0")
-
        (savehist-mode -1) ; causes slowness
 
        (require 'counsel)
-       ;; (setq ivy-prescient-sort-commands '(:not
-       ;;                                     swiper
-       ;;                                     swiper-isearch
-       ;;                                     counsel-grep-or-swiper
-       ;;                                     counsel-yank-pop
-       ;;                                     ivy-switch-buffer))
-       ;; (setq prescient-filter-method '(literal regexp initialism))
-       ;; (ivy-prescient-mode +1)
        (highlight-parentheses-mode -1)
 
        ;; OSX specific
@@ -1445,8 +1365,6 @@ Returns non-nil if any such excessive-length line is detected."
 
        ;; (when (memq window-system '(mac ns x))
          ;; (exec-path-from-shell-initialize))
-
-       (ivy-posframe-mode +1)
 
        )
 
@@ -1819,7 +1737,8 @@ This function is called at the very end of Spacemacs initialization."
  '(rustic-ansi-faces
    ["#ffffff" "#c82829" "#718c00" "#eab700" "#3e999f" "#c9b4cf" "#8abeb7" "#4d4d4c"])
  '(safe-local-variable-values
-   '((rspec-use-chruby . t)
+   '((lsp-solargraph-use-bundler . t)
+     (rspec-use-chruby . t)
      (rspec-use-docker-when-possible . t)
      (rspec-docker-cwd . "/backend/")
      (rspec-docker-container . test)
