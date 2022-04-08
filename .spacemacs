@@ -1168,6 +1168,10 @@ Interactively also sends a terminating newline."
          (when (file-exists-p "~/projects/gabi/emacs-slack.el")
            (load "~/projects/gabi/emacs-slack.el")))
 
+       (with-eval-after-load 'lsp
+         (require 'lsp-headerline)
+         (require 'lsp-diagnostics))
+
        (defun asok/setup-ruby ()
          (setq ruby-align-to-stmt-keywords '(begin def))
 
