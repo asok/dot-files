@@ -780,569 +780,556 @@ configuration.
 Put your configuration code here, except for variables that should be set
 before packages are loaded."
 
-       (setq
-        ivy-initial-inputs-alist nil
-        bidi-inhibit-bpa t)
+  (setq
+   ivy-initial-inputs-alist nil
+   bidi-inhibit-bpa t)
 
-       (with-eval-after-load 'magithub
-         '(progn
-            (require 'magit-popup)
-            (magithub-feature-autoinject '(commit-browse completion pull-requests-section))
-            (define-key magit-magithub-comment-section-map (kbd "SPC") nil)
-            (define-key magit-magithub-comment-section-map (kbd "RET") #'magithub-comment-view)))
+  (with-eval-after-load 'magit
+    (magit-auto-revert-mode 1)
+    (setq magit-save-repository-buffers 'dontask)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-tags-header)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-pushremote)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-pushremote)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-upstream)
+    (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-upstream-or-recent)
+    )
 
-       (with-eval-after-load 'magit
-         (magit-auto-revert-mode 1)
-         (setq magit-save-repository-buffers 'dontask)
-         (remove-hook 'magit-status-sections-hook 'magit-insert-tags-header)
-         (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-pushremote)
-         (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-pushremote)
-         (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-upstream)
-         (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-upstream-or-recent)
-         )
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
 
-       (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal global-map
+      (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
+      (kbd "M-SPC")   #'ivy-switch-buffer
+      (kbd "s-<left>")   #'switch-to-prev-buffer
+      (kbd "s-<right>")   #'switch-to-next-buffer
+      (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
 
-       (with-eval-after-load 'evil
-         (evil-define-key 'normal global-map
-           (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
-           (kbd "M-SPC")   #'ivy-switch-buffer
-           (kbd "s-<left>")   #'switch-to-prev-buffer
-           (kbd "s-<right>")   #'switch-to-next-buffer
-           (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
+    (evil-define-key 'emacs global-map
+      (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
+      (kbd "M-SPC")   #'ivy-switch-buffer
+      (kbd "s-<left>")   #'switch-to-prev-buffer
+      (kbd "s-<right>")   #'switch-to-next-buffer
+      (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
 
-         (evil-define-key 'emacs global-map
-           (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
-           (kbd "M-SPC")   #'ivy-switch-buffer
-           (kbd "s-<left>")   #'switch-to-prev-buffer
-           (kbd "s-<right>")   #'switch-to-next-buffer
-           (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
+    (evil-define-key 'visual global-map (kbd "v") #'er/expand-region)
 
-         (evil-define-key 'visual global-map (kbd "v") #'er/expand-region)
+    (define-key global-map (kbd "s-<left>")   #'switch-to-prev-buffer)
+    (define-key global-map (kbd "s-<right>")  #'switch-to-next-buffer)
 
-         (define-key global-map (kbd "s-<left>")   #'switch-to-prev-buffer)
-         (define-key global-map (kbd "s-<right>")  #'switch-to-next-buffer)
+    (add-hook 'git-commit-mode-hook 'evil-insert-state)
+    (evil-set-initial-state 'magit-log-edit-mode 'insert))
 
-         (add-hook 'git-commit-mode-hook 'evil-insert-state)
-         (evil-set-initial-state 'magit-log-edit-mode 'insert))
+  (spacemacs/set-leader-keys
+    "\""  (lambda () (interactive) (eshell t)))
 
+  (with-eval-after-load 'shell-pop
+    (defun asok/shell-pop-emacs-state-maybe ()
+      (if (eq shell-default-shell 'ansi-term)
+          (evil-emacs-state)))
 
-       (spacemacs/set-leader-keys
-         "\""  (lambda () (interactive) (eshell t)))
+    (add-hook 'shell-pop-in-after-hook #'asok/shell-pop-emacs-state-maybe))
 
-       (with-eval-after-load 'magithub-comment
-         (define-key magit-magithub-comment-section-map (kbd "SPC") nil))
+  (with-eval-after-load 'smartparens
+    (defun asok/at-comment-p ()
+      (let ((face (face-at-point t)))
+        (or
+         (eq face 'font-lock-comment-delimiter-face)
+         (eq face 'font-lock-comment-face))))
 
-       (with-eval-after-load 'shell-pop
-         (defun asok/shell-pop-emacs-state-maybe ()
-           (if (eq shell-default-shell 'ansi-term)
-               (evil-emacs-state)))
+    (defun asok/sp-change-line ()
+      (interactive)
+      (call-interactively #'sp-kill-hybrid-sexp)
+      (evil-insert-state))
 
-         (add-hook 'shell-pop-in-after-hook #'asok/shell-pop-emacs-state-maybe))
+    (defun asok/sp-open-line-below-sexp ()
+      (interactive)
+      (sp-end-of-sexp)
+      (newline-and-indent)
+      (evil-insert-state))
 
-       (defun asok/at-comment-p ()
-         (let ((face (face-at-point t)))
-           (or
-            (eq face 'font-lock-comment-delimiter-face)
-            (eq face 'font-lock-comment-face))))
+    (defun asok/sp-insert-at-the-sexp-end ()
+      (interactive)
+      (sp-end-of-sexp)
+      (evil-insert-state))
 
-       (defun asok/sp-change-line ()
-         (interactive)
-         (call-interactively #'sp-kill-hybrid-sexp)
-         (evil-insert-state))
+    (evil-define-command asok/sp-change-line-command ()
+      :repeat t
+      (asok/sp-change-line))
 
-       (defun asok/sp-open-line-below-sexp ()
-         (interactive)
-         (sp-end-of-sexp)
-         (newline-and-indent)
-         (evil-insert-state))
+    (evil-define-command asok/sp-open-line-below-sexp-command ()
+      :repeat t
+      (asok/sp-open-line-below-sexp))
 
-       (defun asok/sp-insert-at-the-sexp-end ()
-         (interactive)
-         (sp-end-of-sexp)
-         (evil-insert-state))
+    (evil-define-command asok/sp-insert-at-the-sexp-end-command ()
+      :repeat t
+      (asok/sp-insert-at-the-sexp-end))
 
-       (with-eval-after-load 'smartparens
-         '(progn
-            (evil-define-command asok/sp-change-line-command ()
-              :repeat t
-              (asok/sp-change-line))
+    (evil-define-key 'normal smartparens-mode-map
+      (kbd "M-r") #'sp-raise-sexp
+      (kbd "M-o") #'asok/sp-open-line-below-sexp-command
+      (kbd "C") #'asok/sp-change-line-command
+      (kbd "D") #'sp-kill-hybrid-sexp))
 
-            (evil-define-command asok/sp-open-line-below-sexp-command ()
-              :repeat t
-              (asok/sp-open-line-below-sexp))
+  (spacemacs/set-leader-keys
+    ":"   #'eval-expression
+    "SPC" #'counsel-M-x
+    "j k" #'dumb-jump-go
+    "j K" #'dumb-jump-go-other-window)
 
-            (evil-define-command asok/sp-insert-at-the-sexp-end-command ()
-              :repeat t
-              (asok/sp-insert-at-the-sexp-end))
+  (define-key spacemacs-default-map (kbd "q Q") nil)
+  (define-key spacemacs-default-map (kbd "q q") nil)
+  (define-key spacemacs-default-map (kbd "q R") nil)
+  (define-key spacemacs-default-map (kbd "q r") nil)
 
-            (evil-define-key 'normal smartparens-mode-map
-              (kbd "M-r") #'sp-raise-sexp
-              (kbd "M-o") #'asok/sp-open-line-below-sexp-command
-              (kbd "C") #'asok/sp-change-line-command
-              (kbd "D") #'sp-kill-hybrid-sexp)))
+  (with-eval-after-load 'slim-mode
+    (add-to-list 'auto-mode-alist '("\\.slime\\'" . slim-mode)))
 
-       (spacemacs/set-leader-keys
-         ":"   #'eval-expression
-         "SPC" #'counsel-M-x
-         "j k" #'dumb-jump-go
-         "j K" #'dumb-jump-go-other-window)
+  (defun asok/sp-wrap-with-curly-braces ()
+    (interactive)
+    (sp-wrap-with-pair "{")
+    (evil-insert 1))
 
+  (defun asok/sp-wrap-with-square-brackets ()
+    (interactive)
+    (sp-wrap-with-pair "[")
+    (evil-insert 1))
 
-       (define-key spacemacs-default-map (kbd "q Q") nil)
-       (define-key spacemacs-default-map (kbd "q q") nil)
-       (define-key spacemacs-default-map (kbd "q R") nil)
-       (define-key spacemacs-default-map (kbd "q r") nil)
+  (defun asok/sp-wrap-with-quotes ()
+    (interactive)
+    (sp-wrap-with-pair "\"")
+    (evil-insert 1))
 
-       (with-eval-after-load 'slim-mode
-         (add-to-list 'auto-mode-alist '("\\.slime\\'" . slim-mode)))
+  (spacemacs/set-leader-keys
+    "k{" #'asok/sp-wrap-with-curly-braces
+    "k[" #'asok/sp-wrap-with-square-brackets
+    "k\"" #'asok/sp-wrap-with-quotes)
 
-       (defun asok/sp-wrap-with-curly-braces ()
-         (interactive)
-         (sp-wrap-with-pair "{")
-         (evil-insert 1))
+  (fullframe magit-status magit-mode-quit-window)
+  (fullframe wttrin wttrin-exit)
 
-       (defun asok/sp-wrap-with-square-brackets ()
-         (interactive)
-         (sp-wrap-with-pair "[")
-         (evil-insert 1))
+  (add-hook 'eval-expression-minibuffer-setup-hook #'eldoc-mode)
+  (add-hook 'eval-expression-minibuffer-setup-hook #'paredit-mode)
 
-       (defun asok/sp-wrap-with-quotes ()
-         (interactive)
-         (sp-wrap-with-pair "\"")
-         (evil-insert 1))
+  (defadvice load-theme
+      (before theme-dont-propagate activate)
+    (mapcar #'disable-theme custom-enabled-themes))
 
-       (spacemacs/set-leader-keys
-         "k{" #'asok/sp-wrap-with-curly-braces
-         "k[" #'asok/sp-wrap-with-square-brackets
-         "k\"" #'asok/sp-wrap-with-quotes)
+  (add-to-list 'magic-mode-alist '("[\s\n]import React" . rjsx-mode))
 
-       (fullframe magit-status magit-mode-quit-window)
-       (fullframe wttrin wttrin-exit)
+  (defun asok/bundle--around (fun &rest args)
+    "Run FUN from the project root."
+    (projectile-with-default-dir (projectile-project-root)
+      (apply fun args)))
 
-       (add-hook 'eval-expression-minibuffer-setup-hook #'eldoc-mode)
-       (add-hook 'eval-expression-minibuffer-setup-hook #'paredit-mode)
+  (advice-add 'bundle-command :around #'asok/bundle--around)
+  (advice-add 'bundle-open :around #'asok/bundle--around)
 
-       (defadvice load-theme
-           (before theme-dont-propagate activate)
-         (mapcar #'disable-theme custom-enabled-themes))
+  (add-hook 'dired-mode-hook #'hl-line-mode)
 
-       (add-to-list 'magic-mode-alist '("[\s\n]import React" . rjsx-mode))
+  (global-vi-tilde-fringe-mode -1)
 
-       (defun asok/bundle--around (fun &rest args)
-         "Run FUN from the project root."
-         (projectile-with-default-dir (projectile-project-root)
-           (apply fun args)))
+  (add-hook 'prog-mode-hook
+            (lambda ()
+              ;; turn off `linum-mode' when there are more than 5000 lines
+              ;; use `wc -c file' for performance reason
+              (if (and (executable-find "wc")
+                       (> (string-to-number (shell-command-to-string (format "wc -c %s" (buffer-file-name))))
+                          (* 5000 80)))
+                  (linum-mode -1))))
 
-       (advice-add 'bundle-command :around #'asok/bundle--around)
-       (advice-add 'bundle-open :around #'asok/bundle--around)
+  (add-hook 'alchemist-test-report-mode-hook '(lambda ()
+                                                (make-local-variable 'truncate-partial-width-windows)
+                                                (make-local-variable 'truncate-lines)
+                                                (setq truncate-partial-width-windows nil
+                                                      truncate-lines nil)))
 
-       (add-hook 'dired-mode-hook #'hl-line-mode)
+  (with-eval-after-load 'elixir
+    (add-to-list 'elixir-mode-hook
+                 (defun auto-activate-ruby-end-mode-for-elixir-mode ()
+                   (set (make-variable-buffer-local 'ruby-end-expand-keywords-before-re)
+                        "\\(?:^\\|\\s-+\\)\\(?:do\\)")
+                   (set (make-variable-buffer-local 'ruby-end-check-statement-modifiers) nil)
+                   (ruby-end-mode +1))))
 
-       (global-vi-tilde-fringe-mode -1)
-
-       (add-hook 'prog-mode-hook
-                 (lambda ()
-                   ;; turn off `linum-mode' when there are more than 5000 lines
-                   ;; use `wc -c file' for performance reason
-                   (if (and (executable-find "wc")
-                            (> (string-to-number (shell-command-to-string (format "wc -c %s" (buffer-file-name))))
-                               (* 5000 80)))
-                       (linum-mode -1))))
-
-       (add-hook 'alchemist-test-report-mode-hook '(lambda ()
-                                                     (make-local-variable 'truncate-partial-width-windows)
-                                                     (make-local-variable 'truncate-lines)
-                                                     (setq truncate-partial-width-windows nil
-                                                           truncate-lines nil)))
-
-       (with-eval-after-load 'elixir
-         (add-to-list 'elixir-mode-hook
-                      (defun auto-activate-ruby-end-mode-for-elixir-mode ()
-                        (set (make-variable-buffer-local 'ruby-end-expand-keywords-before-re)
-                             "\\(?:^\\|\\s-+\\)\\(?:do\\)")
-                        (set (make-variable-buffer-local 'ruby-end-check-statement-modifiers) nil)
-                        (ruby-end-mode +1))))
-
-       (with-eval-after-load 'smartparens
-         (sp-with-modes '(elixir-mode)
-           (sp-local-pair "fn" "end"
-                          :when '(("SPC" "RET"))
-                          :actions '(insert navigate))
-           (sp-local-pair "do" "end"
-                          :when '(("SPC" "RET"))
-                          :post-handlers '(sp-ruby-def-post-handler)
-                          :actions '(insert navigate))))
+  (with-eval-after-load 'smartparens
+    (sp-with-modes '(elixir-mode)
+      (sp-local-pair "fn" "end"
+                     :when '(("SPC" "RET"))
+                     :actions '(insert navigate))
+      (sp-local-pair "do" "end"
+                     :when '(("SPC" "RET"))
+                     :post-handlers '(sp-ruby-def-post-handler)
+                     :actions '(insert navigate))))
 
 
-       (require 'smartparens-ruby)
+  (require 'smartparens-ruby)
 
-       (with-eval-after-load 'term
-         (evil-define-key 'normal term-raw-map (kbd "i") #'evil-emacs-state)
-         (evil-define-key 'normal term-raw-map (kbd "a") '(lambda ()
-                                                            (interactive)
-                                                            (evil-emacs-state)
-                                                            (forward-char 1)))
-         (evil-define-key 'emacs term-raw-map (kbd "ESC") #'evil-normal-state))
+  (with-eval-after-load 'term
+    (evil-define-key 'normal term-raw-map (kbd "i") #'evil-emacs-state)
+    (evil-define-key 'normal term-raw-map (kbd "a") '(lambda ()
+                                                       (interactive)
+                                                       (evil-emacs-state)
+                                                       (forward-char 1)))
+    (evil-define-key 'emacs term-raw-map (kbd "ESC") #'evil-normal-state))
 
-       (with-eval-after-load 'volatile-highlights
-         (vhl/give-advice-to-make-vhl-on-changes evil-paste-after)
-         (vhl/give-advice-to-make-vhl-on-changes evil-paste-before)
-         (vhl/give-advice-to-make-vhl-on-changes evil-paste-pop))
+  (with-eval-after-load 'volatile-highlights
+    (vhl/give-advice-to-make-vhl-on-changes evil-paste-after)
+    (vhl/give-advice-to-make-vhl-on-changes evil-paste-before)
+    (vhl/give-advice-to-make-vhl-on-changes evil-paste-pop))
 
-       (with-eval-after-load 'alchemist-mix
-         (defun alchemist-mix-test-this-buffer ()
-           "Run the current buffer or a test for the current buffer through mix test."
-           (interactive)
-           (if (alchemist-utils-test-file-p)
-               (alchemist-mix--test-file buffer-file-name)
-             (alchemist-project-run-tests-for-current-file)))
+  (with-eval-after-load 'alchemist-mix
+    (defun alchemist-mix-test-this-buffer ()
+      "Run the current buffer or a test for the current buffer through mix test."
+      (interactive)
+      (if (alchemist-utils-test-file-p)
+          (alchemist-mix--test-file buffer-file-name)
+        (alchemist-project-run-tests-for-current-file)))
 
-         )
+    )
 
-       (with-eval-after-load 'ivy-posframe
+  (with-eval-after-load 'ivy-posframe
 
-         (set-face-attribute 'ivy-posframe-border nil :background "black")
+    (set-face-attribute 'ivy-posframe-border nil :background "black")
 
-         (setq ivy-posframe-border-width 1)
+    (setq ivy-posframe-border-width 1)
 
-         (setq ivy-posframe-display-functions-alist
-               '((swiper                        . ivy-display-function-fallback)
-                 (spacemacs/search-project-auto . ivy-display-function-fallback)
-                 (counsel-rg                    . ivy-display-function-fallback)
-                 (complete-symbol               . ivy-posframe-display-at-point)
-                 (t                             . ivy-posframe-display-at-frame-center))))
+    (setq ivy-posframe-display-functions-alist
+          '((swiper                        . ivy-display-function-fallback)
+            (spacemacs/search-project-auto . ivy-display-function-fallback)
+            (counsel-rg                    . ivy-display-function-fallback)
+            (complete-symbol               . ivy-posframe-display-at-point)
+            (t                             . ivy-posframe-display-at-frame-center))))
 
-       (defun asok/align-hash ()
-         (interactive)
-         (align-regexp (region-beginning) (region-end) "\\(\\s-*\\)=>"))
+  (defun asok/align-hash ()
+    (interactive)
+    (align-regexp (region-beginning) (region-end) "\\(\\s-*\\)=>"))
 
-       (with-eval-after-load 'compilation-mode
-         (defun endless/send-input (input &optional nl)
-           "Send INPUT to the current process.
+  (with-eval-after-load 'compilation-mode
+    (defun endless/send-input (input &optional nl)
+      "Send INPUT to the current process.
 Interactively also sends a terminating newline."
-           (interactive "MInput: \nd")
-           (let ((string (concat input (if nl "\n"))))
-             ;; This is just for visual feedback.
-             (let ((inhibit-read-only t))
-               (insert-before-markers string))
-             ;; This is the important part.
-             (process-send-string
-              (get-buffer-process (current-buffer))
-              string)))
+      (interactive "MInput: \nd")
+      (let ((string (concat input (if nl "\n"))))
+        ;; This is just for visual feedback.
+        (let ((inhibit-read-only t))
+          (insert-before-markers string))
+        ;; This is the important part.
+        (process-send-string
+         (get-buffer-process (current-buffer))
+         string)))
 
-         (defun endless/send-self ()
-           "Send the pressed key to the current process."
-           (interactive)
-           (endless/send-input
-            (apply #'string
-                   (append (this-command-keys-vector) nil))))
+    (defun endless/send-self ()
+      "Send the pressed key to the current process."
+      (interactive)
+      (endless/send-input
+       (apply #'string
+              (append (this-command-keys-vector) nil))))
 
-         (define-key compilation-mode-map (kbd "C-c i")
-           #'endless/send-input)
+    (define-key compilation-mode-map (kbd "C-c i")
+                #'endless/send-input)
 
-         (dolist (key '("\C-d" "\C-j" "y" "n"))
-           (define-key compilation-mode-map key
-             #'endless/send-self)))
+    (dolist (key '("\C-d" "\C-j" "y" "n"))
+      (define-key compilation-mode-map key
+                  #'endless/send-self)))
 
-       (with-eval-after-load 'counsel-dash
-         (add-hook 'rjsx-mode-hook
-                   (lambda ()
-                     (setq-local counsel-dash-docsets '("NodeJS" "React"))
-                     ;; (setq zeal-at-point-docset "ruby,rails")
-                     ))
-         (setq counsel-dash-browser-func 'eww))
+  (with-eval-after-load 'counsel-dash
+    (add-hook 'rjsx-mode-hook
+              (lambda ()
+                (setq-local counsel-dash-docsets '("NodeJS" "React"))
+                ;; (setq zeal-at-point-docset "ruby,rails")
+                ))
+    (setq counsel-dash-browser-func 'eww))
 
-       (with-eval-after-load 'vterm
-         (defun asok/vterm-c-r ()
-           (interactive)
-           (vterm-send-key "r" nil nil t))
+  (with-eval-after-load 'vterm
+    (defun asok/vterm-c-r ()
+      (interactive)
+      (vterm-send-key "r" nil nil t))
 
-         (evil-define-key 'insert vterm-mode-map (kbd "C-r") #'asok/vterm-c-r))
+    (evil-define-key 'insert vterm-mode-map (kbd "C-r") #'asok/vterm-c-r))
 
-       (with-eval-after-load 'projectile-rails
-         (setq projectile-rails-expand-snippet-with-magic-comment t)
+  (with-eval-after-load 'projectile-rails
+    (setq projectile-rails-expand-snippet-with-magic-comment t)
 
-         (add-hook 'projectile-rails-mode-hook
-                   (lambda ()
-                     (setq-local counsel-dash-docsets '("Ruby" "Ruby On Rails"))
-                     (setq zeal-at-point-docset "ruby,rails")))
+    (add-hook 'projectile-rails-mode-hook
+              (lambda ()
+                (setq-local counsel-dash-docsets '("Ruby" "Ruby On Rails"))
+                (setq zeal-at-point-docset "ruby,rails")))
 
-         (defun rake-rails-db-migrate ()
-           (interactive)
-           (rake-compile "db:migrate"
-                         'projectile-rails-compilation-mode))
+    (defun rake-rails-db-migrate ()
+      (interactive)
+      (rake-compile "db:migrate"
+                    'projectile-rails-compilation-mode))
 
-         (defun rake-rails-db-migrate-test ()
-           (interactive)
-           (rake-compile "db:migrate RAILS_ENV=test"
-                         'projectile-rails-compilation-mode))
+    (defun rake-rails-db-migrate-test ()
+      (interactive)
+      (rake-compile "db:migrate RAILS_ENV=test"
+                    'projectile-rails-compilation-mode))
 
-         (defun rake-rails-db-rollback ()
-           (interactive)
-           (rake-compile "db:rollback"
-                         'projectile-rails-compilation-mode))
+    (defun rake-rails-db-rollback ()
+      (interactive)
+      (rake-compile "db:rollback"
+                    'projectile-rails-compilation-mode))
 
-         (defun rake-rails-db-rollback-test ()
-           (interactive)
-           (rake-compile "db:rollback RAILS_ENV=test"
-                         'projectile-rails-compilation-mode))
+    (defun rake-rails-db-rollback-test ()
+      (interactive)
+      (rake-compile "db:rollback RAILS_ENV=test"
+                    'projectile-rails-compilation-mode))
 
-         (defun rake-rails-recreate-db ()
-           (interactive)
-           (rake-compile "db:drop db:create RAILS_ENV=development"
-                         'projectile-rails-compilation-mode))
+    (defun rake-rails-recreate-db ()
+      (interactive)
+      (rake-compile "db:drop db:create RAILS_ENV=development"
+                    'projectile-rails-compilation-mode))
 
-         (defun spring-restart ()
-           (interactive)
-           (let ((default-directory (projectile-rails-root)))
-             (shell-command "spring stop")
-             (shell-command "spring restart")))
+    (defun spring-restart ()
+      (interactive)
+      (let ((default-directory (projectile-rails-root)))
+        (shell-command "spring stop")
+        (shell-command "spring restart")))
 
-         (spacemacs|define-jump-handlers web-mode projectile-rails-goto-file-at-point)
-         (spacemacs|define-jump-handlers haml-mode projectile-rails-goto-file-at-point)
-         (spacemacs|define-jump-handlers slim-mode projectile-rails-goto-file-at-point)
-         )
+    (spacemacs|define-jump-handlers web-mode projectile-rails-goto-file-at-point)
+    (spacemacs|define-jump-handlers haml-mode projectile-rails-goto-file-at-point)
+    (spacemacs|define-jump-handlers slim-mode projectile-rails-goto-file-at-point)
+    )
 
-       (remove-hook 'ruby-mode-hook 'robe-mode)
+  (remove-hook 'ruby-mode-hook 'robe-mode)
 
-       (remove-hook 'projectile-rails-mode-hook 'projectile-rails-expand-snippet-maybe)
+  (remove-hook 'projectile-rails-mode-hook 'projectile-rails-expand-snippet-maybe)
 
-       (add-hook 'js2-mode-hook
-                 (lambda ()
-                   (push '("function" . ?λ) prettify-symbols-alist)))
+  (add-hook 'js2-mode-hook
+            (lambda ()
+              (push '("function" . ?λ) prettify-symbols-alist)))
 
-       (with-eval-after-load 'rjsx-mode
-         (add-hook 'rjsx-mode-hook 'flycheck-mode)
-         (with-eval-after-load 'flycheck
-           (require 'flycheck-flow)
-           (flycheck-add-mode 'javascript-flow 'rjsx-mode))
-         (evil-define-key 'normal rjsx-mode-map (kbd "C-d") 'rjsx-delete-creates-full-tag))
+  (with-eval-after-load 'rjsx-mode
+    (add-hook 'rjsx-mode-hook 'flycheck-mode)
+    (with-eval-after-load 'flycheck
+      (require 'flycheck-flow)
+      (flycheck-add-mode 'javascript-flow 'rjsx-mode))
+    (evil-define-key 'normal rjsx-mode-map (kbd "C-d") 'rjsx-delete-creates-full-tag))
 
-       (with-eval-after-load 'swiper
-         (evil-define-key 'normal global-map (kbd "C-s") 'counsel-grep-or-swiper)
+  (with-eval-after-load 'swiper
+    (evil-define-key 'normal global-map (kbd "C-s") 'counsel-grep-or-swiper)
 
-         (setq counsel-grep-base-command
-               "rg -i -M 120 --no-heading --line-number --color never '%s' %s"))
+    (setq counsel-grep-base-command
+          "rg -i -M 120 --no-heading --line-number --color never '%s' %s"))
 
-       (with-eval-after-load 'gotham-theme
-         (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
+  (with-eval-after-load 'gotham-theme
+    (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
 
-       (spacemacs//add-to-load-path "~/projects/all-the-icons-ivy")
-       (require 'all-the-icons-ivy)
-       (all-the-icons-ivy-setup)
+  (spacemacs//add-to-load-path "~/projects/all-the-icons-ivy")
+  (require 'all-the-icons-ivy)
+  (all-the-icons-ivy-setup)
 
-       (show-smartparens-global-mode -1)
-       (global-highlight-parentheses-mode +1)
+  (show-smartparens-global-mode -1)
+  (global-highlight-parentheses-mode +1)
 
-       ;; Not working...
-       (require 'ivy-posframe)
-       (ivy-posframe-mode +1)
+  ;; Not working...
+  (require 'ivy-posframe)
+  (ivy-posframe-mode +1)
 
-       (defvar so-long-threshold 500)
-       (defvar so-long-max-lines 5)
+  (defvar so-long-threshold 500)
+  (defvar so-long-max-lines 5)
 
-       (with-eval-after-load 'doom-city-lights
-         (custom-theme-set-faces
-          'doom-city-lights
-          '(ivy-current-match ((t (:underline t))))
-          '(font-lock-variable-name-face ((t (:foreground "#5EC4FF"))))))
+  (with-eval-after-load 'doom-city-lights
+    (custom-theme-set-faces
+     'doom-city-lights
+     '(ivy-current-match ((t (:underline t))))
+     '(font-lock-variable-name-face ((t (:foreground "#5EC4FF"))))))
 
-       ;; Not working...
-       (with-eval-after-load 'solo-jazz-theme
-         (solo-jazz-with-color-variables
-          (custom-theme-set-faces
-           'solo-jazz
-           `(font-lock-type-face        	 ((t (:foreground ,solo-jazz-pink))))
-           `(font-lock-function-name-face ((t (:foreground ,solo-jazz-blue))))
-           ))
-         )
+  ;; Not working...
+  (with-eval-after-load 'solo-jazz-theme
+    (solo-jazz-with-color-variables
+     (custom-theme-set-faces
+      'solo-jazz
+      `(font-lock-type-face        	 ((t (:foreground ,solo-jazz-pink))))
+      `(font-lock-function-name-face ((t (:foreground ,solo-jazz-blue))))
+      ))
+    )
 
-       (with-eval-after-load 'spacemacs-light
-         (custom-theme-set-faces
-          'spacemacs-light
-          '(font-lock-constant-face ((t (:inherit 'font-lock-type-face :weight normal)))))
-         )
+  (with-eval-after-load 'spacemacs-light
+    (custom-theme-set-faces
+     'spacemacs-light
+     '(font-lock-constant-face ((t (:inherit 'font-lock-type-face :weight normal)))))
+    )
 
-       (with-eval-after-load 'slack
-         (when (file-exists-p "~/projects/gabi/emacs-slack.el")
-           (load "~/projects/gabi/emacs-slack.el")))
+  (with-eval-after-load 'slack
+    (when (file-exists-p "~/projects/gabi/emacs-slack.el")
+      (load "~/projects/gabi/emacs-slack.el")))
 
-       (with-eval-after-load 'lsp
-         (require 'lsp-headerline)
-         (require 'lsp-diagnostics))
+  (with-eval-after-load 'lsp
+    (require 'lsp-headerline)
+    (require 'lsp-diagnostics))
 
-       (defun asok/setup-ruby ()
-         (setq ruby-align-to-stmt-keywords '(begin def))
+  (defun asok/setup-ruby ()
+    (setq ruby-align-to-stmt-keywords '(begin def))
 
-         (spacemacs/set-leader-keys-for-major-mode 'ruby-mode
-           "rl"  'multi-line))
+    (spacemacs/set-leader-keys-for-major-mode 'ruby-mode
+      "rl"  'multi-line))
 
-       (add-hook 'ruby-mode-hook #'asok/setup-ruby 99)
+  (add-hook 'ruby-mode-hook #'asok/setup-ruby 99)
 
-       (defun asok/rubocop-doc-url (id)
-         (format
-          "https://docs.rubocop.org/en/latest/cops_%s/#%s"
-          (downcase (car (split-string id "/")))
-          (downcase (replace-regexp-in-string "/" "" id))
-          ))
+  (defun asok/rubocop-doc-url (id)
+    (format
+     "https://docs.rubocop.org/en/latest/cops_%s/#%s"
+     (downcase (car (split-string id "/")))
+     (downcase (replace-regexp-in-string "/" "" id))
+     ))
 
-       (defun asok/rubocop-doc-eww (id)
-         (interactive "sCop name: ")
-         (eww (asok/rubocop-doc-url id)))
+  (defun asok/rubocop-doc-eww (id)
+    (interactive "sCop name: ")
+    (eww (asok/rubocop-doc-url id)))
 
-       (defun asok/rubocop-doc-browse (id)
-         (interactive "sCop name: ")
-         (browse-url (asok/rubocop-doc-url id)))
+  (defun asok/rubocop-doc-browse (id)
+    (interactive "sCop name: ")
+    (browse-url (asok/rubocop-doc-url id)))
 
-       (defun asok/rubocop-cops-at-point ()
-         (let* ((linenum (line-number-at-pos))
-                (filename (buffer-file-name))
-                (re (concat filename ":" (number-to-string linenum) ":[0-9]+: [A-Z]+: \\(.+\\):")))
-           (with-temp-buffer
-             (insert (shell-command-to-string (concat "rubocop -D -f emacs " filename)))
+  (defun asok/rubocop-cops-at-point ()
+    (let* ((linenum (line-number-at-pos))
+           (filename (buffer-file-name))
+           (re (concat filename ":" (number-to-string linenum) ":[0-9]+: [A-Z]+: \\(.+\\):")))
+      (with-temp-buffer
+        (insert (shell-command-to-string (concat "rubocop -D -f emacs " filename)))
 
-             (let ((matches))
-               (save-match-data
-                 (save-excursion
-                   (with-current-buffer (current-buffer)
-                     (save-restriction
-                       (widen)
-                       (goto-char 1)
-                       (while (search-forward-regexp re nil t 1)
-                         (push (match-string 1) matches)))))
-                 matches)))))
+        (let ((matches))
+          (save-match-data
+            (save-excursion
+              (with-current-buffer (current-buffer)
+                (save-restriction
+                  (widen)
+                  (goto-char 1)
+                  (while (search-forward-regexp re nil t 1)
+                    (push (match-string 1) matches)))))
+            matches)))))
 
-       (defun asok/rubocop-choose-cop (cops)
-         (if (> 1 (length cops))
-             (completing-read "Cop name: " cops nil t)
-           (car cops)))
+  (defun asok/rubocop-choose-cop (cops)
+    (if (> 1 (length cops))
+        (completing-read "Cop name: " cops nil t)
+      (car cops)))
 
-       (defun asok/rubocop-doc-at-point ()
-         (interactive)
-         (if-let ((cops (asok/rubocop-cops-at-point)))
-             (asok/rubocop-doc-browse (asok/rubocop-choose-cop cops))
-           (warn "No error for ruby-rubocop checker found at the current pos")))
+  (defun asok/rubocop-doc-at-point ()
+    (interactive)
+    (if-let ((cops (asok/rubocop-cops-at-point)))
+        (asok/rubocop-doc-browse (asok/rubocop-choose-cop cops))
+      (warn "No error for ruby-rubocop checker found at the current pos")))
 
-       (defun asok/rubocop-doc-browse (id)
-         (interactive "sCop name: ")
-         (browse-url (asok/rubocop-doc-url id)))
+  (defun asok/rubocop-doc-browse (id)
+    (interactive "sCop name: ")
+    (browse-url (asok/rubocop-doc-url id)))
 
-       (defun asok/rubocop-toggle-cop! (cop)
-         (save-excursion
-           (end-of-line)
-           (insert (format " # rubocop:disable %s" cop))))
+  (defun asok/rubocop-toggle-cop! (cop)
+    (save-excursion
+      (end-of-line)
+      (insert (format " # rubocop:disable %s" cop))))
 
-       (defun asok/rubocop-toggle-cop ()
-         (interactive)
-         (if-let ((cops (asok/rubocop-cops-at-point)))
-             (asok/rubocop-toggle-cop! (asok/rubocop-choose-cop cops))
-           (warn "No error for ruby-rubocop checker found at the current pos")))
+  (defun asok/rubocop-toggle-cop ()
+    (interactive)
+    (if-let ((cops (asok/rubocop-cops-at-point)))
+        (asok/rubocop-toggle-cop! (asok/rubocop-choose-cop cops))
+      (warn "No error for ruby-rubocop checker found at the current pos")))
 
-       (defun asok/pry-cd-and-go ()
-         (interactive)
-         (let* ((method (ruby-add-log-current-method))
-                (constant (car (cdr (s-match "\\([^#]+\\)#?" method)))))
-           (with-temp-buffer
-             (insert (concat "cd " constant))
-             (ruby-send-buffer-and-go))))
+  (defun asok/pry-cd-and-go ()
+    (interactive)
+    (let* ((method (ruby-add-log-current-method))
+           (constant (car (cdr (s-match "\\([^#]+\\)#?" method)))))
+      (with-temp-buffer
+        (insert (concat "cd " constant))
+        (ruby-send-buffer-and-go))))
 
-       (spacemacs/set-leader-keys-for-major-mode 'ruby-mode
-         "sc" 'asok/pry-cd-and-go)
+  (spacemacs/set-leader-keys-for-major-mode 'ruby-mode
+    "sc" 'asok/pry-cd-and-go)
 
-       (add-hook 'js2-mode-hook
-                 (lambda ()
-                   (push '("function" . ?λ) prettify-symbols-alist)))
+  (add-hook 'js2-mode-hook
+            (lambda ()
+              (push '("function" . ?λ) prettify-symbols-alist)))
 
-       (defun asok/yarn-test-file ()
-         (interactive)
-         (compile (concat "yarn test " (buffer-file-name))))
+  (defun asok/yarn-test-file ()
+    (interactive)
+    (compile (concat "yarn test " (buffer-file-name))))
 
-       (evil-define-key 'normal js2-mode-map (kbd ", tt") 'asok/yarn-test-file)
+  (evil-define-key 'normal js2-mode-map (kbd ", tt") 'asok/yarn-test-file)
 
-       (savehist-mode -1) ; causes slowness
+  (savehist-mode -1) ; causes slowness
 
-       (require 'counsel)
-       (highlight-parentheses-mode -1)
+  (require 'counsel)
+  (highlight-parentheses-mode -1)
 
-       ;; OSX specific
-       (when-let ((git (executable-find "git")))
-         (setq magit-git-executable git))
-       (global-auto-revert-mode -1)
+  ;; OSX specific
+  (when-let ((git (executable-find "git")))
+    (setq magit-git-executable git))
+  (global-auto-revert-mode -1)
 
-       (define-key process-menu-mode-map (kbd "C-k") 'joaot/delete-process-at-point)
+  (define-key process-menu-mode-map (kbd "C-k") 'joaot/delete-process-at-point)
 
-       (defun asok/toggle-ns-alternate-modifier ()
-         (interactive)
-         (if ns-alternate-modifier
-             (setq ns-alternate-modifier nil)
-           (setq ns-alternate-modifier 'meta)))
+  (defun asok/toggle-ns-alternate-modifier ()
+    (interactive)
+    (if ns-alternate-modifier
+        (setq ns-alternate-modifier nil)
+      (setq ns-alternate-modifier 'meta)))
 
-       (defun joaot/delete-process-at-point ()
-         (interactive)
-         (let ((process (get-text-property (point) 'tabulated-list-id)))
-           (cond ((and process
-                       (processp process))
-                  (delete-process process)
-                  (revert-buffer))
-                 (t
-                  (error "no process at point!")))))
+  (defun joaot/delete-process-at-point ()
+    (interactive)
+    (let ((process (get-text-property (point) 'tabulated-list-id)))
+      (cond ((and process
+                  (processp process))
+             (delete-process process)
+             (revert-buffer))
+            (t
+             (error "no process at point!")))))
 
-       (defun asok/visit-gh-pr-url ()
-         "Visit the current branch's PR on Github."
-         (interactive)
-         (browse-url (format "https://github.com/%s/pull/new/%s"
-                             (replace-regexp-in-string
-                              ;; "\\.+github\\.com:\\(.+\\)\\.git\\'" "\\1" ; git protocol
-                              ".+github\\.com/\\(.+\\)\\.git" "\\1"         ; https protocol
-                              (magit-get "remote" (magit-get-push-remote) "url"))
-                             (magit-get-current-branch))))
+  (defun asok/visit-gh-pr-url ()
+    "Visit the current branch's PR on Github."
+    (interactive)
+    (browse-url (format "https://github.com/%s/pull/new/%s"
+                        (replace-regexp-in-string
+                         ;; "\\.+github\\.com:\\(.+\\)\\.git\\'" "\\1" ; git protocol
+                         ".+github\\.com/\\(.+\\)\\.git" "\\1"         ; https protocol
+                         (magit-get "remote" (magit-get-push-remote) "url"))
+                        (magit-get-current-branch))))
 
-       ;; (setq mu4e-contexts
-       ;;       `( ,(make-mu4e-context
-       ;;            :name "Public"
-       ;;            :enter-func (lambda () (mu4e-message "Switch to the Public context"))
-       ;;            ;; leave-func not defined
-       ;;            :match-func (lambda (msg)
-       ;;                          (when msg
-       ;;                            (mu4e-message-contact-field-matches
-       ;;                             msg
-       ;;                             :to "adam.sokolnicki@gmail.com")))
-       ;;            :vars '(  ( user-mail-address      . "adam.sokolnicki@gmail.com"  )
-       ;;                      ( user-full-name     . "Adam Sokolnicki")
-       ;;                      ( mu4e-compose-signature .
-       ;;                        (concat
-       ;;                         "Cheers,\n"
-       ;;                         "Adam Sokolnicki\n"))))
-       ;;          ,(make-mu4e-context
-       ;;            :name "Gabi"
-       ;;            :enter-func (lambda () (mu4e-message "Switch to the Gabi context"))
-       ;;            ;; leave-fun not defined
-       ;;            :match-func (lambda (msg)
-       ;;                          (when msg
-       ;;                            (mu4e-message-contact-field-matches
-       ;;                             msg
-       ;;                             :to "adam@gabi.com")))
-       ;;            :vars '(  ( user-mail-address      . "adam@gabi.com" )
-       ;;                      ( user-full-name     . "Adam Sokolnicki" )
-       ;;                      ( mu4e-compose-signature .
-       ;;                        (concat
-       ;;                         "Cheers,\n"
-       ;;                         "Adam Sokolnicki\n"))))))
+  ;; (setq mu4e-contexts
+  ;;       `( ,(make-mu4e-context
+  ;;            :name "Public"
+  ;;            :enter-func (lambda () (mu4e-message "Switch to the Public context"))
+  ;;            ;; leave-func not defined
+  ;;            :match-func (lambda (msg)
+  ;;                          (when msg
+  ;;                            (mu4e-message-contact-field-matches
+  ;;                             msg
+  ;;                             :to "adam.sokolnicki@gmail.com")))
+  ;;            :vars '(  ( user-mail-address      . "adam.sokolnicki@gmail.com"  )
+  ;;                      ( user-full-name     . "Adam Sokolnicki")
+  ;;                      ( mu4e-compose-signature .
+  ;;                        (concat
+  ;;                         "Cheers,\n"
+  ;;                         "Adam Sokolnicki\n"))))
+  ;;          ,(make-mu4e-context
+  ;;            :name "Gabi"
+  ;;            :enter-func (lambda () (mu4e-message "Switch to the Gabi context"))
+  ;;            ;; leave-fun not defined
+  ;;            :match-func (lambda (msg)
+  ;;                          (when msg
+  ;;                            (mu4e-message-contact-field-matches
+  ;;                             msg
+  ;;                             :to "adam@gabi.com")))
+  ;;            :vars '(  ( user-mail-address      . "adam@gabi.com" )
+  ;;                      ( user-full-name     . "Adam Sokolnicki" )
+  ;;                      ( mu4e-compose-signature .
+  ;;                        (concat
+  ;;                         "Cheers,\n"
+  ;;                         "Adam Sokolnicki\n"))))))
 
-       ;; (add-to-list 'auth-sources (expand-file-name "~/.emacs.d/mu4e/.mbsyncpass-public-gmail.gpg"))
+  ;; (add-to-list 'auth-sources (expand-file-name "~/.emacs.d/mu4e/.mbsyncpass-public-gmail.gpg"))
 
-       ;; (with-eval-after-load 'mu4e-alert
-         ;; Enable Desktop notifications
-         ;; (mu4e-alert-set-default-style 'notifications)) ; For Linux.
-         ;; (mu4e-alert-set-default-style 'libnotify))  ; Alternative for Linux
-         ;; (mu4e-alert-set-default-style 'notifier))   ; For macOS (through the terminal notifier app).
-       ;; (mu4e-alert-set-default-style 'growl))      ; Alternative for macOS.
+  ;; (with-eval-after-load 'mu4e-alert
+  ;; Enable Desktop notifications
+  ;; (mu4e-alert-set-default-style 'notifications)) ; For Linux.
+  ;; (mu4e-alert-set-default-style 'libnotify))  ; Alternative for Linux
+  ;; (mu4e-alert-set-default-style 'notifier))   ; For macOS (through the terminal notifier app).
+  ;; (mu4e-alert-set-default-style 'growl))      ; Alternative for macOS.
 
-       ;; (when (memq window-system '(mac ns x))
-         ;; (exec-path-from-shell-initialize))
+  ;; (when (memq window-system '(mac ns x))
+  ;; (exec-path-from-shell-initialize))
 
-       )
+  )
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -1604,174 +1591,174 @@ static char *gnus-pointer[] = {
 This is an auto-generated function, do not modify its content directly, use
 Emacs customize menu instead.
 This function is called at the very end of Spacemacs initialization."
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ansi-color-faces-vector
-   [default bold shadow italic underline bold bold-italic bold])
- '(ansi-color-names-vector
-   ["#073642" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#657b83"])
- '(ansi-term-color-vector
-   [unspecified "#1F1611" "#660000" "#144212" "#EFC232" "#5798AE" "#BE73FD" "#93C1BC" "#E6E1DC"] t)
- '(auto-insert-mode t)
- '(awesome-tray-mode-line-active-color "#2fafff")
- '(awesome-tray-mode-line-inactive-color "#2f2f2f")
- '(beacon-color "#d33682")
- '(company-quickhelp-color-background "#b0b0b0")
- '(company-quickhelp-color-foreground "#232333")
- '(compilation-message-face 'default)
- '(cua-global-mark-cursor-color "#2aa198")
- '(cua-normal-cursor-color "#839496")
- '(cua-overwrite-cursor-color "#b58900")
- '(cua-read-only-cursor-color "#859900")
- '(custom-safe-themes
-   '("246a9596178bb806c5f41e5b571546bb6e0f4bd41a9da0df5dfbca7ec6e2250c" "e6f3a4a582ffb5de0471c9b640a5f0212ccf258a987ba421ae2659f1eaa39b09" "a2e7b508533d46b701ad3b055e7c708323fb110b6676a8be458a758dd8f24e27" "5999e12c8070b9090a2a1bbcd02ec28906e150bb2cdce5ace4f965c76cf30476" "d320493111089afba1563bc3962d8ea1117dd2b3abb189aeebdc8c51b5517ddb" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "44eec3c3e6e673c0d41b523a67b64c43b6e38f8879a7969f306604dcf908832c" "5b24babd20e58465e070a8d7850ec573fe30aca66c8383a62a5e7a3588db830b" "72a81c54c97b9e5efcc3ea214382615649ebb539cb4f2fe3a46cd12af72c7607" "5e2dc1360a92bb73dafa11c46ba0f30fa5f49df887a8ede4e3533c3ab6270e08" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "c1390663960169cd92f58aad44ba3253227d8f715c026438303c09b9fb66cdfb" "9b59e147dbbde5e638ea1cde5ec0a358d5f269d27bd2b893a0947c4a867e14c1" "2dd32048690787844d8cba601ed3dd8b2f419e9bd985898d0c3792671a05b96b" "6bb466c89b7e3eedc1f19f5a0cfa53be9baf6077f4d4a6f9b5d087f0231de9c8" "f782ed87369a7d568cee28d14922aa6d639f49dd676124d817dd82c8208985d0" "9e147cee63e1a2a6b16021e0645bc66c633c42b849e78b8e295df4b7fe55c56a" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "590759adc4a5bf7a183df81654cce13b96089e026af67d92b5eec658fb3fe22f" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" "ce557950466bf42096853c6dac6875b9ae9c782b8665f62478980cc5e3b6028d" "d79ece4768dfc4bab488475b85c2a8748dcdc3690e11a922f6be5e526a20b485" "d09467d742f713443c7699a546c0300db1a75fed347e09e3f178ab2f3aa2c617" "72c7c8b431179cbcfcea4193234be6a0e6916d04c44405fc87905ae16bed422a" "8abee8a14e028101f90a2d314f1b03bed1cde7fd3f1eb945ada6ffc15b1d7d65" "cedd3b4295ac0a41ef48376e16b4745c25fa8e7b4f706173083f16d5792bb379" "5c6d40ef6e7bbe9e83dc0e32db794c7e9a6a0d9eb7d6a874aaf9744c053842b4" "19ba41b6dc0b5dd34e1b8628ad7ae47deb19f968fe8c31853d64ea8c4df252b8" "f04122bbc305a202967fa1838e20ff741455307c2ae80a26035fbf5d637e325f" "3632cf223c62cb7da121be0ed641a2243f7ec0130178722554e613c9ab3131de" "66132890ee1f884b4f8e901f0c61c5ed078809626a547dbefbb201f900d03fd8" "d8f76414f8f2dcb045a37eb155bfaa2e1d17b6573ed43fb1d18b936febc7bbc2" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "5f8f1e226274b73f6e706431399a597dbfd64db34f3fba56a6ccf57d148a0e01" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "51e228ffd6c4fff9b5168b31d5927c27734e82ec61f414970fc6bcce23bc140d" "68d36308fc6e7395f7e6355f92c1dd9029c7a672cbecf8048e2933a053cf27e6" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default))
- '(diary-entry-marker 'font-lock-variable-name-face)
- '(emms-mode-line-icon-image-cache
-   '(image :type xpm :ascent center :data "/* XPM */\12static char *note[] = {\12/* width height num_colors chars_per_pixel */\12\"    10   11        2            1\",\12/* colors */\12\". c #1ba1a1\",\12\"# c None s None\",\12/* pixels */\12\"###...####\",\12\"###.#...##\",\12\"###.###...\",\12\"###.#####.\",\12\"###.#####.\",\12\"#...#####.\",\12\"....#####.\",\12\"#..######.\",\12\"#######...\",\12\"######....\",\12\"#######..#\" };"))
- '(evil-emacs-state-cursor '("#E57373" hbar) t)
- '(evil-insert-state-cursor '("#E57373" bar) t)
- '(evil-normal-state-cursor '("#FFEE58" box) t)
- '(evil-visual-state-cursor '("#C5E1A5" box) t)
- '(evil-want-Y-yank-to-eol t)
- '(fci-rule-character-color "#d9d9d9")
- '(fci-rule-color "#d9d9d9" t)
- '(flycheck-color-mode-line-face-to-color 'mode-line-buffer-id)
- '(flycheck-javascript-flow-args nil)
- '(flymake-error-bitmap '(flymake-double-exclamation-mark modus-theme-fringe-red))
- '(flymake-note-bitmap '(exclamation-mark modus-theme-fringe-cyan))
- '(flymake-warning-bitmap '(exclamation-mark modus-theme-fringe-yellow))
- '(frame-background-mode 'light)
- '(fringe-mode 6 nil (fringe))
- '(global-auto-revert-mode t)
- '(global-hl-line-mode t)
- '(gnus-logo-colors '("#1ec1c4" "#bababa") t)
- '(gnus-mode-line-image-cache
-   '(image :type xpm :ascent center :data "/* XPM */\12static char *gnus-pointer[] = {\12/* width height num_colors chars_per_pixel */\12\"    18    13        2            1\",\12/* colors */\12\". c #1ba1a1\",\12\"# c None s None\",\12/* pixels */\12\"##################\",\12\"######..##..######\",\12\"#####........#####\",\12\"#.##.##..##...####\",\12\"#...####.###...##.\",\12\"#..###.######.....\",\12\"#####.########...#\",\12\"###########.######\",\12\"####.###.#..######\",\12\"######..###.######\",\12\"###....####.######\",\12\"###..######.######\"" ",\12\"###########.######\" };") t)
- '(highlight-changes-colors '("#d33682" "#6c71c4"))
- '(highlight-indent-guides-auto-enabled nil)
- '(highlight-parentheses-background-colors '("#2492db" "#95a5a6" nil))
- '(highlight-symbol-colors
-   (--map
-    (solarized-color-blend it "#002b36" 0.25)
-    '("#b58900" "#2aa198" "#dc322f" "#6c71c4" "#859900" "#cb4b16" "#268bd2")))
- '(highlight-symbol-foreground-color "#93a1a1")
- '(highlight-tail-colors
-   '(("#073642" . 0)
-     ("#546E00" . 20)
-     ("#00736F" . 30)
-     ("#00629D" . 50)
-     ("#7B6000" . 60)
-     ("#8B2C02" . 70)
-     ("#93115C" . 85)
-     ("#073642" . 100)))
- '(hl-bg-colors
-   '("#7B6000" "#8B2C02" "#990A1B" "#93115C" "#3F4D91" "#00629D" "#00736F" "#546E00"))
- '(hl-fg-colors
-   '("#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36"))
- '(hl-sexp-background-color "#efebe9")
- '(hl-todo-keyword-faces
-   '(("TODO" . "#dc752f")
-     ("NEXT" . "#dc752f")
-     ("THEM" . "#2d9574")
-     ("PROG" . "#4f97d7")
-     ("OKAY" . "#4f97d7")
-     ("DONT" . "#f2241f")
-     ("FAIL" . "#f2241f")
-     ("DONE" . "#86dc2f")
-     ("NOTE" . "#b1951d")
-     ("KLUDGE" . "#b1951d")
-     ("HACK" . "#b1951d")
-     ("TEMP" . "#b1951d")
-     ("FIXME" . "#dc752f")
-     ("XXX" . "#dc752f")
-     ("XXXX" . "#dc752f")))
- '(ibuffer-deletion-face 'modus-theme-mark-del)
- '(ibuffer-filter-group-name-face 'modus-theme-mark-symbol)
- '(ibuffer-marked-face 'modus-theme-mark-sel)
- '(ibuffer-title-face 'modus-theme-header)
- '(ivy-posframe-mode nil nil (ivy-posframe))
- '(jdee-db-active-breakpoint-face-colors (cons "#0d0f11" "#7FC1CA"))
- '(jdee-db-requested-breakpoint-face-colors (cons "#0d0f11" "#A8CE93"))
- '(jdee-db-spec-breakpoint-face-colors (cons "#0d0f11" "#899BA6"))
- '(line-number-mode t)
- '(linum-format 'dynamic)
- '(lsp-ui-doc-border "#93a1a1")
- '(magit-diff-use-overlays nil)
- '(minimap-mode nil)
- '(nrepl-message-colors
-   '("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4"))
- '(objed-cursor-color "#c82829")
- '(package-selected-packages
-   '(magit-gh-pulls lenlen-theme github-search github-clone github-browse-file gist gh marshal logito pcache winum white-sand-theme wgrep vlf toml-mode tide typescript-mode sunburn-theme smex oauth2 ruby-hash-syntax rjsx-mode rebecca-theme racer powerthesaurus jeison org-category-capture org-mime ob-restclient ob-http nubox nord-theme nodejs-repl nginx-mode madhat2r-theme ivy-posframe posframe ivy-hydra parent-mode helpful elisp-refs loop haml-mode ham-mode html-to-markdown fuzzy flymd flycheck-rust pos-tip flycheck-flow flycheck-credo flx exotica-theme evil-vimish-fold vimish-fold transient evil-lion goto-chg es-mode spark elfeed-web elfeed-org elfeed-goodies ace-jump-mode noflet elfeed doom-themes dockerfile-mode docker tablist docker-tramp json-snatcher diminish dash-at-point autothemer csv-mode counsel-dash dash-docs company-tabnine unicode-escape names company-restclient restclient know-your-http-well peg lv eval-sexp-fu sesman queue parseedn parseclj a cargo rust-mode better-jumper all-the-icons-dired all-the-icons memoize log4e gntp pkg-info epl powershell inflections seq birds-of-paradise-plus-theme-theme sourcerer-theme pug-mode ob-elixir org minitest ivy-purpose window-purpose imenu-list hide-comnt ht rake evil-unimpaired drupal-mode counsel-projectile counsel swiper undo-tree ivy rainbow-mode flycheck-elixir-dogma metalheart-theme ruby-end org-projectile git-link flycheck-mix darkokai-theme emojify dash-functional iedit highlight fzf sql-indent wttrin alchemist elixir-mode jinja2-mode ansible-doc ansible tramp-term ssh powerline slack circe request websocket ranger js2-mode projectile flycheck magit magit-popup git-commit with-editor smartparens web-completion-data tern hydra edn multiple-cursors paredit cider spinner clojure-mode packed avy auto-complete anzu markdown-mode yasnippet company gitignore-mode helm popup helm-core async json-reformat alert f s dash package-build bind-key bind-map evil org-download skewer-mode simple-httpd evil-visual-mark-mode dumb-jump shut-up ansi commander ctable concurrent deferred ert-runner epc sanityinc-tomorrow-night-theme-theme inf-ruby ac-inf-ruby evil-jumper eyebrowse column-enforce-mode zonokai-theme zenburn-theme zen-and-art-theme zeal-at-point yaml-mode xterm-color ws-butler window-numbering which-key wgrep-ag web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stekene-theme spacemacs-theme spaceline spacegray-theme soothe-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smooth-scrolling smeargle slim-mode shell-pop seti-theme scss-mode sass-mode rvm ruby-tools ruby-test-mode rubocop rspec-mode robe reverse-theme restart-emacs rbenv rainbow-delimiters railscasts-theme quelpa purple-haze-theme projectile-rails professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pastels-on-dark-theme paradox page-break-lines orgit organic-green-theme org-repo-todo org-present org-pomodoro org-plus-contrib org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme leuven-theme less-css-mode json-mode js2-refactor js-doc jbeans-theme jazz-theme jade-mode ir-black-theme inkpot-theme info+ indent-guide ido-vertical-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-dash helm-css-scss helm-company helm-c-yasnippet helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gmail-message-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger gh-md gandalf-theme fullframe flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator feature-mode farmhouse-theme fancy-battery expand-region exec-path-from-shell evil-visualstar evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu espresso-theme eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dracula-theme django-theme define-word darktooth-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme company-web company-tern company-statistics company-quickhelp colorsarenice-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode cider-eval-sexp-fu chruby cherry-blossom-theme busybee-theme bundler buffer-move bubbleberry-theme bracketed-paste birds-of-paradise-plus-theme beacon badwolf-theme auto-yasnippet auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent ag afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))
- '(paradox-github-token t)
- '(pdf-view-midnight-colors '("#b2b2b2" . "#292b2e"))
- '(pos-tip-background-color "#073642")
- '(pos-tip-foreground-color "#93a1a1")
- '(rustic-ansi-faces
-   ["#ffffff" "#c82829" "#718c00" "#eab700" "#3e999f" "#c9b4cf" "#8abeb7" "#4d4d4c"])
- '(safe-local-variable-values
-   '((lsp-solargraph-use-bundler . t)
-     (rspec-use-chruby . t)
-     (rspec-use-docker-when-possible . t)
-     (rspec-docker-cwd . "/backend/")
-     (rspec-docker-container . test)
-     (projectile-rails-custom-console-command . "docker-compose run console")
-     (typescript-backend . tide)
-     (typescript-backend . lsp)
-     (javascript-backend . tide)
-     (javascript-backend . tern)
-     (javascript-backend . lsp)
-     (eval setq cider-cljs-lein-repl "(do (use 'figwheel-sidecar.repl-api) (start-figwheel!) (cljs-repl))")
-     (elixir-enable-compilation-checking . t)
-     (elixir-enable-compilation-checking)
-     (flycheck-disabled-checkers emacs-lisp-checkdoc)))
- '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#073642" 0.2))
- '(sml/active-background-color "#34495e")
- '(sml/active-foreground-color "#ecf0f1")
- '(sml/inactive-background-color "#dfe4ea")
- '(sml/inactive-foreground-color "#34495e")
- '(tabbar-background-color "#357535753575")
- '(term-default-bg-color "#002b36")
- '(term-default-fg-color "#839496")
- '(vc-annotate-background nil)
- '(vc-annotate-background-mode nil)
- '(vc-annotate-color-map
-   '((20 . "#d54e53")
-     (40 . "#e78c45")
-     (60 . "#e7c547")
-     (80 . "#b9ca4a")
-     (100 . "#70c0b1")
-     (120 . "#7aa6da")
-     (140 . "#c397d8")
-     (160 . "#d54e53")
-     (180 . "#e78c45")
-     (200 . "#e7c547")
-     (220 . "#b9ca4a")
-     (240 . "#70c0b1")
-     (260 . "#7aa6da")
-     (280 . "#c397d8")
-     (300 . "#d54e53")
-     (320 . "#e78c45")
-     (340 . "#e7c547")
-     (360 . "#b9ca4a")))
- '(vc-annotate-very-old-color nil)
- '(warning-suppress-log-types '((comp)))
- '(weechat-color-list
-   '(unspecified "#002b36" "#073642" "#990A1B" "#dc322f" "#546E00" "#859900" "#7B6000" "#b58900" "#00629D" "#268bd2" "#93115C" "#d33682" "#00736F" "#2aa198" "#839496" "#657b83"))
- '(which-key-posframe-mode t)
- '(window-divider-mode nil)
- '(xterm-color-names
-   ["#073642" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#eee8d5"])
- '(xterm-color-names-bright
-   ["#002b36" "#cb4b16" "#586e75" "#657b83" "#839496" "#6c71c4" "#93a1a1" "#fdf6e3"]))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:background nil))))
- '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t))
-)
+  (custom-set-variables
+   ;; custom-set-variables was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(ansi-color-faces-vector
+     [default bold shadow italic underline bold bold-italic bold])
+   '(ansi-color-names-vector
+     ["#073642" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#657b83"])
+   '(ansi-term-color-vector
+     [unspecified "#1F1611" "#660000" "#144212" "#EFC232" "#5798AE" "#BE73FD" "#93C1BC" "#E6E1DC"] t)
+   '(auto-insert-mode t)
+   '(awesome-tray-mode-line-active-color "#2fafff")
+   '(awesome-tray-mode-line-inactive-color "#2f2f2f")
+   '(beacon-color "#d33682")
+   '(company-quickhelp-color-background "#b0b0b0")
+   '(company-quickhelp-color-foreground "#232333")
+   '(compilation-message-face 'default)
+   '(cua-global-mark-cursor-color "#2aa198")
+   '(cua-normal-cursor-color "#839496")
+   '(cua-overwrite-cursor-color "#b58900")
+   '(cua-read-only-cursor-color "#859900")
+   '(custom-safe-themes
+     '("246a9596178bb806c5f41e5b571546bb6e0f4bd41a9da0df5dfbca7ec6e2250c" "e6f3a4a582ffb5de0471c9b640a5f0212ccf258a987ba421ae2659f1eaa39b09" "a2e7b508533d46b701ad3b055e7c708323fb110b6676a8be458a758dd8f24e27" "5999e12c8070b9090a2a1bbcd02ec28906e150bb2cdce5ace4f965c76cf30476" "d320493111089afba1563bc3962d8ea1117dd2b3abb189aeebdc8c51b5517ddb" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "44eec3c3e6e673c0d41b523a67b64c43b6e38f8879a7969f306604dcf908832c" "5b24babd20e58465e070a8d7850ec573fe30aca66c8383a62a5e7a3588db830b" "72a81c54c97b9e5efcc3ea214382615649ebb539cb4f2fe3a46cd12af72c7607" "5e2dc1360a92bb73dafa11c46ba0f30fa5f49df887a8ede4e3533c3ab6270e08" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "c1390663960169cd92f58aad44ba3253227d8f715c026438303c09b9fb66cdfb" "9b59e147dbbde5e638ea1cde5ec0a358d5f269d27bd2b893a0947c4a867e14c1" "2dd32048690787844d8cba601ed3dd8b2f419e9bd985898d0c3792671a05b96b" "6bb466c89b7e3eedc1f19f5a0cfa53be9baf6077f4d4a6f9b5d087f0231de9c8" "f782ed87369a7d568cee28d14922aa6d639f49dd676124d817dd82c8208985d0" "9e147cee63e1a2a6b16021e0645bc66c633c42b849e78b8e295df4b7fe55c56a" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "590759adc4a5bf7a183df81654cce13b96089e026af67d92b5eec658fb3fe22f" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" "ce557950466bf42096853c6dac6875b9ae9c782b8665f62478980cc5e3b6028d" "d79ece4768dfc4bab488475b85c2a8748dcdc3690e11a922f6be5e526a20b485" "d09467d742f713443c7699a546c0300db1a75fed347e09e3f178ab2f3aa2c617" "72c7c8b431179cbcfcea4193234be6a0e6916d04c44405fc87905ae16bed422a" "8abee8a14e028101f90a2d314f1b03bed1cde7fd3f1eb945ada6ffc15b1d7d65" "cedd3b4295ac0a41ef48376e16b4745c25fa8e7b4f706173083f16d5792bb379" "5c6d40ef6e7bbe9e83dc0e32db794c7e9a6a0d9eb7d6a874aaf9744c053842b4" "19ba41b6dc0b5dd34e1b8628ad7ae47deb19f968fe8c31853d64ea8c4df252b8" "f04122bbc305a202967fa1838e20ff741455307c2ae80a26035fbf5d637e325f" "3632cf223c62cb7da121be0ed641a2243f7ec0130178722554e613c9ab3131de" "66132890ee1f884b4f8e901f0c61c5ed078809626a547dbefbb201f900d03fd8" "d8f76414f8f2dcb045a37eb155bfaa2e1d17b6573ed43fb1d18b936febc7bbc2" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "5f8f1e226274b73f6e706431399a597dbfd64db34f3fba56a6ccf57d148a0e01" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "51e228ffd6c4fff9b5168b31d5927c27734e82ec61f414970fc6bcce23bc140d" "68d36308fc6e7395f7e6355f92c1dd9029c7a672cbecf8048e2933a053cf27e6" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" default))
+   '(diary-entry-marker 'font-lock-variable-name-face)
+   '(emms-mode-line-icon-image-cache
+     '(image :type xpm :ascent center :data "/* XPM */\12static char *note[] = {\12/* width height num_colors chars_per_pixel */\12\"    10   11        2            1\",\12/* colors */\12\". c #1ba1a1\",\12\"# c None s None\",\12/* pixels */\12\"###...####\",\12\"###.#...##\",\12\"###.###...\",\12\"###.#####.\",\12\"###.#####.\",\12\"#...#####.\",\12\"....#####.\",\12\"#..######.\",\12\"#######...\",\12\"######....\",\12\"#######..#\" };"))
+   '(evil-emacs-state-cursor '("#E57373" hbar) t)
+   '(evil-insert-state-cursor '("#E57373" bar) t)
+   '(evil-normal-state-cursor '("#FFEE58" box) t)
+   '(evil-visual-state-cursor '("#C5E1A5" box) t)
+   '(evil-want-Y-yank-to-eol t)
+   '(fci-rule-character-color "#d9d9d9")
+   '(fci-rule-color "#d9d9d9" t)
+   '(flycheck-color-mode-line-face-to-color 'mode-line-buffer-id)
+   '(flycheck-javascript-flow-args nil)
+   '(flymake-error-bitmap '(flymake-double-exclamation-mark modus-theme-fringe-red))
+   '(flymake-note-bitmap '(exclamation-mark modus-theme-fringe-cyan))
+   '(flymake-warning-bitmap '(exclamation-mark modus-theme-fringe-yellow))
+   '(frame-background-mode 'light)
+   '(fringe-mode 6 nil (fringe))
+   '(global-auto-revert-mode t)
+   '(global-hl-line-mode t)
+   '(gnus-logo-colors '("#1ec1c4" "#bababa") t)
+   '(gnus-mode-line-image-cache
+     '(image :type xpm :ascent center :data "/* XPM */\12static char *gnus-pointer[] = {\12/* width height num_colors chars_per_pixel */\12\"    18    13        2            1\",\12/* colors */\12\". c #1ba1a1\",\12\"# c None s None\",\12/* pixels */\12\"##################\",\12\"######..##..######\",\12\"#####........#####\",\12\"#.##.##..##...####\",\12\"#...####.###...##.\",\12\"#..###.######.....\",\12\"#####.########...#\",\12\"###########.######\",\12\"####.###.#..######\",\12\"######..###.######\",\12\"###....####.######\",\12\"###..######.######\"" ",\12\"###########.######\" };") t)
+   '(highlight-changes-colors '("#d33682" "#6c71c4"))
+   '(highlight-indent-guides-auto-enabled nil)
+   '(highlight-parentheses-background-colors '("#2492db" "#95a5a6" nil))
+   '(highlight-symbol-colors
+     (--map
+      (solarized-color-blend it "#002b36" 0.25)
+      '("#b58900" "#2aa198" "#dc322f" "#6c71c4" "#859900" "#cb4b16" "#268bd2")))
+   '(highlight-symbol-foreground-color "#93a1a1")
+   '(highlight-tail-colors
+     '(("#073642" . 0)
+       ("#546E00" . 20)
+       ("#00736F" . 30)
+       ("#00629D" . 50)
+       ("#7B6000" . 60)
+       ("#8B2C02" . 70)
+       ("#93115C" . 85)
+       ("#073642" . 100)))
+   '(hl-bg-colors
+     '("#7B6000" "#8B2C02" "#990A1B" "#93115C" "#3F4D91" "#00629D" "#00736F" "#546E00"))
+   '(hl-fg-colors
+     '("#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36" "#002b36"))
+   '(hl-sexp-background-color "#efebe9")
+   '(hl-todo-keyword-faces
+     '(("TODO" . "#dc752f")
+       ("NEXT" . "#dc752f")
+       ("THEM" . "#2d9574")
+       ("PROG" . "#4f97d7")
+       ("OKAY" . "#4f97d7")
+       ("DONT" . "#f2241f")
+       ("FAIL" . "#f2241f")
+       ("DONE" . "#86dc2f")
+       ("NOTE" . "#b1951d")
+       ("KLUDGE" . "#b1951d")
+       ("HACK" . "#b1951d")
+       ("TEMP" . "#b1951d")
+       ("FIXME" . "#dc752f")
+       ("XXX" . "#dc752f")
+       ("XXXX" . "#dc752f")))
+   '(ibuffer-deletion-face 'modus-theme-mark-del)
+   '(ibuffer-filter-group-name-face 'modus-theme-mark-symbol)
+   '(ibuffer-marked-face 'modus-theme-mark-sel)
+   '(ibuffer-title-face 'modus-theme-header)
+   '(ivy-posframe-mode nil nil (ivy-posframe))
+   '(jdee-db-active-breakpoint-face-colors (cons "#0d0f11" "#7FC1CA"))
+   '(jdee-db-requested-breakpoint-face-colors (cons "#0d0f11" "#A8CE93"))
+   '(jdee-db-spec-breakpoint-face-colors (cons "#0d0f11" "#899BA6"))
+   '(line-number-mode t)
+   '(linum-format 'dynamic)
+   '(lsp-ui-doc-border "#93a1a1")
+   '(magit-diff-use-overlays nil)
+   '(minimap-mode nil)
+   '(nrepl-message-colors
+     '("#dc322f" "#cb4b16" "#b58900" "#546E00" "#B4C342" "#00629D" "#2aa198" "#d33682" "#6c71c4"))
+   '(objed-cursor-color "#c82829")
+   '(package-selected-packages
+     '(magit-gh-pulls lenlen-theme github-search github-clone github-browse-file gist gh marshal logito pcache winum white-sand-theme wgrep vlf toml-mode tide typescript-mode sunburn-theme smex oauth2 ruby-hash-syntax rjsx-mode rebecca-theme racer powerthesaurus jeison org-category-capture org-mime ob-restclient ob-http nubox nord-theme nodejs-repl nginx-mode madhat2r-theme ivy-posframe posframe ivy-hydra parent-mode helpful elisp-refs loop haml-mode ham-mode html-to-markdown fuzzy flymd flycheck-rust pos-tip flycheck-flow flycheck-credo flx exotica-theme evil-vimish-fold vimish-fold transient evil-lion goto-chg es-mode spark elfeed-web elfeed-org elfeed-goodies ace-jump-mode noflet elfeed doom-themes dockerfile-mode docker tablist docker-tramp json-snatcher diminish dash-at-point autothemer csv-mode counsel-dash dash-docs company-tabnine unicode-escape names company-restclient restclient know-your-http-well peg lv eval-sexp-fu sesman queue parseedn parseclj a cargo rust-mode better-jumper all-the-icons-dired all-the-icons memoize log4e gntp pkg-info epl powershell inflections seq birds-of-paradise-plus-theme-theme sourcerer-theme pug-mode ob-elixir org minitest ivy-purpose window-purpose imenu-list hide-comnt ht rake evil-unimpaired drupal-mode counsel-projectile counsel swiper undo-tree ivy rainbow-mode flycheck-elixir-dogma metalheart-theme ruby-end org-projectile git-link flycheck-mix darkokai-theme emojify dash-functional iedit highlight fzf sql-indent wttrin alchemist elixir-mode jinja2-mode ansible-doc ansible tramp-term ssh powerline slack circe request websocket ranger js2-mode projectile flycheck magit magit-popup git-commit with-editor smartparens web-completion-data tern hydra edn multiple-cursors paredit cider spinner clojure-mode packed avy auto-complete anzu markdown-mode yasnippet company gitignore-mode helm popup helm-core async json-reformat alert f s dash package-build bind-key bind-map evil org-download skewer-mode simple-httpd evil-visual-mark-mode dumb-jump shut-up ansi commander ctable concurrent deferred ert-runner epc sanityinc-tomorrow-night-theme-theme inf-ruby ac-inf-ruby evil-jumper eyebrowse column-enforce-mode zonokai-theme zenburn-theme zen-and-art-theme zeal-at-point yaml-mode xterm-color ws-butler window-numbering which-key wgrep-ag web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stekene-theme spacemacs-theme spaceline spacegray-theme soothe-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smooth-scrolling smeargle slim-mode shell-pop seti-theme scss-mode sass-mode rvm ruby-tools ruby-test-mode rubocop rspec-mode robe reverse-theme restart-emacs rbenv rainbow-delimiters railscasts-theme quelpa purple-haze-theme projectile-rails professional-theme popwin planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pastels-on-dark-theme paradox page-break-lines orgit organic-green-theme org-repo-todo org-present org-pomodoro org-plus-contrib org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow macrostep lush-theme lorem-ipsum livid-mode linum-relative link-hint light-soap-theme leuven-theme less-css-mode json-mode js2-refactor js-doc jbeans-theme jazz-theme jade-mode ir-black-theme inkpot-theme info+ indent-guide ido-vertical-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make helm-gitignore helm-flx helm-descbinds helm-dash helm-css-scss helm-company helm-c-yasnippet helm-ag hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gmail-message-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger gh-md gandalf-theme fullframe flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator feature-mode farmhouse-theme fancy-battery expand-region exec-path-from-shell evil-visualstar evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu espresso-theme eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav edit-server dracula-theme django-theme define-word darktooth-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme company-web company-tern company-statistics company-quickhelp colorsarenice-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode cider-eval-sexp-fu chruby cherry-blossom-theme busybee-theme bundler buffer-move bubbleberry-theme bracketed-paste birds-of-paradise-plus-theme beacon badwolf-theme auto-yasnippet auto-highlight-symbol auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent ag afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))
+   '(paradox-github-token t)
+   '(pdf-view-midnight-colors '("#b2b2b2" . "#292b2e"))
+   '(pos-tip-background-color "#073642")
+   '(pos-tip-foreground-color "#93a1a1")
+   '(rustic-ansi-faces
+     ["#ffffff" "#c82829" "#718c00" "#eab700" "#3e999f" "#c9b4cf" "#8abeb7" "#4d4d4c"])
+   '(safe-local-variable-values
+     '((lsp-solargraph-use-bundler . t)
+       (rspec-use-chruby . t)
+       (rspec-use-docker-when-possible . t)
+       (rspec-docker-cwd . "/backend/")
+       (rspec-docker-container . test)
+       (projectile-rails-custom-console-command . "docker-compose run console")
+       (typescript-backend . tide)
+       (typescript-backend . lsp)
+       (javascript-backend . tide)
+       (javascript-backend . tern)
+       (javascript-backend . lsp)
+       (eval setq cider-cljs-lein-repl "(do (use 'figwheel-sidecar.repl-api) (start-figwheel!) (cljs-repl))")
+       (elixir-enable-compilation-checking . t)
+       (elixir-enable-compilation-checking)
+       (flycheck-disabled-checkers emacs-lisp-checkdoc)))
+   '(smartrep-mode-line-active-bg (solarized-color-blend "#859900" "#073642" 0.2))
+   '(sml/active-background-color "#34495e")
+   '(sml/active-foreground-color "#ecf0f1")
+   '(sml/inactive-background-color "#dfe4ea")
+   '(sml/inactive-foreground-color "#34495e")
+   '(tabbar-background-color "#357535753575")
+   '(term-default-bg-color "#002b36")
+   '(term-default-fg-color "#839496")
+   '(vc-annotate-background nil)
+   '(vc-annotate-background-mode nil)
+   '(vc-annotate-color-map
+     '((20 . "#d54e53")
+       (40 . "#e78c45")
+       (60 . "#e7c547")
+       (80 . "#b9ca4a")
+       (100 . "#70c0b1")
+       (120 . "#7aa6da")
+       (140 . "#c397d8")
+       (160 . "#d54e53")
+       (180 . "#e78c45")
+       (200 . "#e7c547")
+       (220 . "#b9ca4a")
+       (240 . "#70c0b1")
+       (260 . "#7aa6da")
+       (280 . "#c397d8")
+       (300 . "#d54e53")
+       (320 . "#e78c45")
+       (340 . "#e7c547")
+       (360 . "#b9ca4a")))
+   '(vc-annotate-very-old-color nil)
+   '(warning-suppress-log-types '((comp)))
+   '(weechat-color-list
+     '(unspecified "#002b36" "#073642" "#990A1B" "#dc322f" "#546E00" "#859900" "#7B6000" "#b58900" "#00629D" "#268bd2" "#93115C" "#d33682" "#00736F" "#2aa198" "#839496" "#657b83"))
+   '(which-key-posframe-mode t)
+   '(window-divider-mode nil)
+   '(xterm-color-names
+     ["#073642" "#dc322f" "#859900" "#b58900" "#268bd2" "#d33682" "#2aa198" "#eee8d5"])
+   '(xterm-color-names-bright
+     ["#002b36" "#cb4b16" "#586e75" "#657b83" "#839496" "#6c71c4" "#93a1a1" "#fdf6e3"]))
+  (custom-set-faces
+   ;; custom-set-faces was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(default ((t (:background nil))))
+   '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t))
+  )
