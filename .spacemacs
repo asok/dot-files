@@ -1164,34 +1164,6 @@ Interactively also sends a terminating newline."
           '(font-lock-constant-face ((t (:inherit 'font-lock-type-face :weight normal)))))
          )
 
-       (defun so-long-line-detected-p ()
-         "Following any initial comments and blank lines, the next N lines of the
-buffer will be tested for excessive length (where \"excessive\" means above
-`so-long-threshold', and N is `so-long-max-lines').
-
-Returns non-nil if any such excessive-length line is detected."
-         (let ((count 0))
-           (save-excursion
-             (goto-char (point-min))
-             (while (comment-forward)) ;; clears whitespace at minimum
-             (catch 'excessive
-               (while (< count so-long-max-lines)
-                 (if (> (- (line-end-position 1) (point))
-                        so-long-threshold)
-                     (throw 'excessive t)
-                   (forward-line)
-                   (setq count (1+ count))))))))
-
-       (defun asok/turn-on-fundamental-if-so-long ()
-         (when (so-long-line-detected-p)
-           (fundamental-mode)
-           (spacemacs/disable-smooth-scrolling)))
-
-       (with-eval-after-load 'beacon
-         (add-hook 'beacon-dont-blink-predicates #'so-long-line-detected-p))
-
-       (add-hook 'find-file-hook 'asok/turn-on-fundamental-if-so-long)
-
        (with-eval-after-load 'slack
          (when (file-exists-p "~/projects/gabi/emacs-slack.el")
            (load "~/projects/gabi/emacs-slack.el")))
