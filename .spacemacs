@@ -713,19 +713,6 @@ in `dotspacemacs/user-config'."
                              (setq-local compilation-always-kill t))
                           '(rspec-mode-hook rspec-verifiable-mode-hook rspec-compilation-mode-hook))
 
-  (with-eval-after-load 'rspec-mode
-    '(rspec-install-snippets)
-
-    (defun asok/rspec-toggle-spec-and-target (fn)
-      (let ((file (rspec-spec-or-target)))
-        (if (file-exists-p file)
-            (call-interactively fn)
-          (when (yes-or-no-p "File does not exist, switch nevertheless?")
-            (call-interactively fn)))))
-
-    (advice-add 'rspec-toggle-spec-and-target :around #'asok/rspec-toggle-spec-and-target)
-    )
-
   (add-hook 'rspec-compilation-mode-hook '(lambda ()
                                             (setq-local compilation-scroll-output nil)))
 
@@ -816,47 +803,6 @@ before packages are loaded."
           (evil-emacs-state)))
 
     (add-hook 'shell-pop-in-after-hook #'asok/shell-pop-emacs-state-maybe))
-
-  (with-eval-after-load 'smartparens
-    (defun asok/at-comment-p ()
-      (let ((face (face-at-point t)))
-        (or
-         (eq face 'font-lock-comment-delimiter-face)
-         (eq face 'font-lock-comment-face))))
-
-    (defun asok/sp-change-line ()
-      (interactive)
-      (call-interactively #'sp-kill-hybrid-sexp)
-      (evil-insert-state))
-
-    (defun asok/sp-open-line-below-sexp ()
-      (interactive)
-      (sp-end-of-sexp)
-      (newline-and-indent)
-      (evil-insert-state))
-
-    (defun asok/sp-insert-at-the-sexp-end ()
-      (interactive)
-      (sp-end-of-sexp)
-      (evil-insert-state))
-
-    (evil-define-command asok/sp-change-line-command ()
-      :repeat t
-      (asok/sp-change-line))
-
-    (evil-define-command asok/sp-open-line-below-sexp-command ()
-      :repeat t
-      (asok/sp-open-line-below-sexp))
-
-    (evil-define-command asok/sp-insert-at-the-sexp-end-command ()
-      :repeat t
-      (asok/sp-insert-at-the-sexp-end))
-
-    (evil-define-key 'normal smartparens-mode-map
-      (kbd "M-r") #'sp-raise-sexp
-      (kbd "M-o") #'asok/sp-open-line-below-sexp-command
-      (kbd "C") #'asok/sp-change-line-command
-      (kbd "D") #'sp-kill-hybrid-sexp))
 
   (spacemacs/set-leader-keys
     ":"   #'eval-expression
@@ -1143,7 +1089,7 @@ Interactively also sends a terminating newline."
     (when (file-exists-p "~/projects/gabi/emacs-slack.el")
       (load "~/projects/gabi/emacs-slack.el")))
 
-  (with-eval-after-load 'lsp
+  (with-eval-after-load 'lsp-mode
     ;; Without it lsp flycheck is not working
     (require 'lsp-headerline)
     (require 'lsp-diagnostics))
@@ -1274,7 +1220,70 @@ Interactively also sends a terminating newline."
                          (magit-get "remote" (magit-get-push-remote) "url"))
                         (magit-get-current-branch))))
 
-  )
+  (with-eval-after-load 'rspec-mode
+    '(rspec-install-snippets)
+
+    (defun asok/rspec-toggle-spec-and-target (fn)
+      (let ((file (rspec-spec-or-target)))
+        (if (file-exists-p file)
+            (call-interactively fn)
+          (when (yes-or-no-p "File does not exist, switch nevertheless?")
+            (call-interactively fn)))))
+
+    (advice-add 'rspec-toggle-spec-and-target :around #'asok/rspec-toggle-spec-and-target)
+    )
+
+  (with-eval-after-load 'smartparens
+    (defun asok/at-comment-p ()
+      (let ((face (face-at-point t)))
+        (or
+         (eq face 'font-lock-comment-delimiter-face)
+         (eq face 'font-lock-comment-face))))
+
+    (defun asok/sp-change-line ()
+      (interactive)
+      (call-interactively #'sp-kill-hybrid-sexp)
+      (evil-insert-state))
+
+    (defun asok/sp-open-line-below-sexp ()
+      (interactive)
+      (sp-end-of-sexp)
+      (newline-and-indent)
+      (evil-insert-state))
+
+    (defun asok/sp-insert-at-the-sexp-end ()
+      (interactive)
+      (sp-end-of-sexp)
+      (evil-insert-state))
+
+    (evil-define-command asok/sp-change-line-command ()
+      :repeat t
+      (asok/sp-change-line))
+
+    (evil-define-command asok/sp-open-line-below-sexp-command ()
+      :repeat t
+      (asok/sp-open-line-below-sexp))
+
+    (evil-define-command asok/sp-insert-at-the-sexp-end-command ()
+      :repeat t
+      (asok/sp-insert-at-the-sexp-end))
+
+    (evil-define-key 'normal smartparens-mode-map
+      (kbd "M-r") #'sp-raise-sexp
+      (kbd "M-o") #'asok/sp-open-line-below-sexp-command
+      (kbd "C") #'asok/sp-change-line-command
+      (kbd "D") #'sp-kill-hybrid-sexp))
+
+  (with-eval-after-load 'ivy
+    (evil-add-hjkl-bindings ivy-occur-grep-mode-map 'normal
+      (kbd "RET") 'ivy-occur-press-and-switch
+      (kbd "C-d") 'ivy-occur-delete-candidate)
+
+    (ivy-set-actions
+     'counsel-find-file
+     `((,(propertize "delete" 'face 'font-lock-warning-face)
+        (lambda (x) (delete-file (expand-file-name x ivy--directory)))))))
+    )
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
