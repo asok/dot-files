@@ -31,7 +31,8 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layer-path '("~/.emacs.d/private/")
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(shell-scripts
+   '(vimscript
+     shell-scripts
      typescript
      html
      csv
@@ -382,7 +383,7 @@ It should only modify the values of Spacemacs settings."
    ;; Default font or prioritized list of fonts. The `:size' can be specified as
    ;; a non-negative integer (pixel size), or a floating-point (point size).
    ;; Point size is recommended, because it's device independent. (default 10.0)
-   dotspacemacs-default-font '("Source Code Pro"
+   dotspacemacs-default-font '("Monaco"
                                :size 12.0
                                :weight normal
                                :width normal)
@@ -703,7 +704,7 @@ in `dotspacemacs/user-config'."
    read-process-output-max (* 1024 1024)
    compilation-ask-about-save nil)
 
-  (let ((file "~/.emacs.d/custom-variables.el"))
+  (let ((file "~/.emacs.d/private/custom-variables.el"))
     (setq custom-file file)
 
     (when (file-exists-p file)
@@ -1089,7 +1090,7 @@ Interactively also sends a terminating newline."
     (when (file-exists-p "~/projects/gabi/emacs-slack.el")
       (load "~/projects/gabi/emacs-slack.el")))
 
-  (with-eval-after-load 'lsp-mode
+  (with-eval-after-load 'lsp
     ;; Without it lsp flycheck is not working
     (require 'lsp-headerline)
     (require 'lsp-diagnostics))
