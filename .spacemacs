@@ -48,11 +48,12 @@ This function should only modify configuration layer settings."
      (auto-completion :variables
                       auto-completion-idle-delay 0.2
                       auto-completion-minimum-prefix-length 2
-                      auto-completion-enable-snippets-in-popup t
+                      auto-completion-enable-snippets-in-popup nil
                       auto-completion-enable-sort-by-usage nil
                       auto-completion-return-key-behavior nil
                       auto-completion-tab-key-behavior 'complete
-                      auto-completion-complete-with-key-sequence nil)
+                      auto-completion-complete-with-key-sequence nil
+                      auto-completion-use-company-posframe t)
 
      ;; better-defaults
      emacs-lisp
