@@ -186,6 +186,7 @@ This function should only modify configuration layer settings."
                                       ivy-prescient
                                       base16-theme
                                       exec-path-from-shell
+                                      devdocs-browser
                                       )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -975,6 +976,13 @@ Interactively also sends a terminating newline."
                 ;; (setq zeal-at-point-docset "ruby,rails")
                 ))
     (setq counsel-dash-browser-func 'eww))
+
+  (with-eval-after-load 'devdocs-browser
+    (setq devdocs-browser-cache-directory "~/.emacs.d/private/")
+
+    (add-to-list 'devdocs-browser-major-mode-docs-alist
+                 '(ruby-mode "ruby"))
+    )
 
   (with-eval-after-load 'vterm
     (defun asok/vterm-c-r ()
