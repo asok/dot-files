@@ -48,7 +48,7 @@ This function should only modify configuration layer settings."
                       auto-completion-idle-delay 0.2
                       auto-completion-minimum-prefix-length 2
                       auto-completion-enable-snippets-in-popup t
-                      auto-completion-enable-sort-by-usage t
+                      auto-completion-enable-sort-by-usage nil
                       auto-completion-return-key-behavior nil
                       auto-completion-tab-key-behavior 'complete
                       auto-completion-complete-with-key-sequence nil)
@@ -139,6 +139,7 @@ This function should only modify configuration layer settings."
           osx-swap-option-and-command nil)
 
      hackernews
+     selectric
 
      )
 
@@ -173,7 +174,6 @@ This function should only modify configuration layer settings."
                                       sunburn-theme
                                       es-mode
                                       powerthesaurus
-                                      company-tabnine
                                       nord-theme
                                       better-jumper
                                       ivy-posframe
@@ -1221,7 +1221,7 @@ Interactively also sends a terminating newline."
                         (magit-get-current-branch))))
 
   (with-eval-after-load 'rspec-mode
-    '(rspec-install-snippets)
+    (rspec-install-snippets)
 
     (defun asok/rspec-toggle-spec-and-target (fn)
       (let ((file (rspec-spec-or-target)))
