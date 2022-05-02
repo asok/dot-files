@@ -994,6 +994,9 @@ Interactively also sends a terminating newline."
   (with-eval-after-load 'projectile-rails
     (setq projectile-rails-expand-snippet-with-magic-comment t)
 
+    (spacemacs/set-leader-keys
+      "ardd" #'devdocs-browser-open)
+
     (add-hook 'projectile-rails-mode-hook
               (lambda ()
                 (setq-local counsel-dash-docsets '("Ruby" "Ruby On Rails"))
