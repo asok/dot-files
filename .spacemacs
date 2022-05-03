@@ -1244,6 +1244,15 @@ Interactively also sends a terminating newline."
             (call-interactively fn)))))
 
     (advice-add 'rspec-toggle-spec-and-target :around #'asok/rspec-toggle-spec-and-target)
+
+    (make-variable-buffer-local 'asok/rspec-force-spring)
+
+    (defun asok/rspec-force-spring (fn &rest args)
+      (if asok/rspec-force-spring
+          "spring rspec"
+        (apply fn args)))
+
+    (advice-add 'rspec-runner :around #'asok/rspec-force-spring)
     )
 
   (with-eval-after-load 'smartparens
