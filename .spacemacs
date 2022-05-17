@@ -779,15 +779,13 @@ before packages are loaded."
       (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
       (kbd "M-SPC")   #'ivy-switch-buffer
       (kbd "s-<left>")   #'switch-to-prev-buffer
-      (kbd "s-<right>")   #'switch-to-next-buffer
-      (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
+      (kbd "s-<right>")   #'switch-to-next-buffer)
 
     (evil-define-key 'emacs global-map
       (kbd "C-M-SPC") #'spacemacs/buffer-transient-state/body
       (kbd "M-SPC")   #'ivy-switch-buffer
       (kbd "s-<left>")   #'switch-to-prev-buffer
-      (kbd "s-<right>")   #'switch-to-next-buffer
-      (kbd "M-p") (lambda () (interactive) (set-mark-command 4)))
+      (kbd "s-<right>")   #'switch-to-next-buffer)
 
     (evil-define-key 'visual global-map (kbd "v") #'er/expand-region)
 
@@ -795,7 +793,10 @@ before packages are loaded."
     (define-key global-map (kbd "s-<right>")  #'switch-to-next-buffer)
 
     (add-hook 'git-commit-mode-hook 'evil-insert-state)
-    (evil-set-initial-state 'magit-log-edit-mode 'insert))
+    (evil-set-initial-state 'magit-log-edit-mode 'insert)
+
+    (define-key evil-normal-state-map (kbd "U") #'evil-redo)
+    )
 
   (with-eval-after-load 'shell-pop
     (defun asok/shell-pop-emacs-state-maybe ()
@@ -817,6 +818,30 @@ before packages are loaded."
               (insert (concat name " " (string-join eshell-last-arguments " ")))
               (eshell-send-input)))
         (error "No last command")))
+
+    (defun asok/comint-send-code (code)
+      (let ((process (get-buffer-process (current-buffer))))
+        (when process
+          (comint-send-string process code))))
+
+    (defun asok/comint-send-up-arrow ()
+      (interactive)
+      (or (asok/comint-send-code "\e[A")
+          (call-interactively #'eshell-previous-matching-input-from-input)))
+
+    (defun asok/comint-send-down-arrow ()
+      (interactive)
+      (or (asok/comint-send-code "\e[B")
+          (call-interactively #'eshell-next-matching-input-from-input)))
+
+    (evil-define-key 'insert eshell-mode-map
+      (kbd "<up>")   #'asok/comint-send-up-arrow
+      (kbd "<down>") #'asok/comint-send-down-arrow)
+
+    (evil-define-key 'normal eshell-mode-map
+      (kbd "C-r") #'spacemacs/ivy-eshell-history)
+    (evil-define-key 'insert eshell-mode-map
+      (kbd "C-r") #'spacemacs/ivy-eshell-history)
     )
 
   (spacemacs/set-leader-keys
