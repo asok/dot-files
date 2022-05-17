@@ -807,13 +807,16 @@ before packages are loaded."
     (defun asok/eshell-rerun-last-command ()
       (interactive)
       (call-interactively #'spacemacs/shell-pop-eshell)
-      (eshell-return-to-prompt)
-      (insert
-       (concat
-        eshell-last-command-name
-        " "
-        (string-join eshell-last-arguments " ")))
-      (eshell-send-input))
+
+      (if eshell-last-command-name
+          (progn
+            (let ((name (if (string-match "function eshell/\\(.+\\)>" eshell-last-command-name)
+                            (match-string 1 eshell-last-command-name)
+                          eshell-last-command-name)))
+              (eshell-return-to-prompt)
+              (insert (concat name " " (string-join eshell-last-arguments " ")))
+              (eshell-send-input)))
+        (error "No last command")))
     )
 
   (spacemacs/set-leader-keys
