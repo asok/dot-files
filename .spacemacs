@@ -82,7 +82,7 @@ This function should only modify configuration layer settings."
      ruby-on-rails
      (shell :variables
             shell-default-term-shell "/bin/zsh"
-            shell-default-shell 'vterm)
+            shell-default-shell 'eshell)
      yaml
      chrome
      (syntax-checking :variables flycheck-disabled-checkers '(emacs-lisp-checkdoc))
@@ -385,7 +385,7 @@ It should only modify the values of Spacemacs settings."
    ;; Default font or prioritized list of fonts. The `:size' can be specified as
    ;; a non-negative integer (pixel size), or a floating-point (point size).
    ;; Point size is recommended, because it's device independent. (default 10.0)
-   dotspacemacs-default-font '("Monaco"
+   dotspacemacs-default-font '("Mononoki"
                                :size 12.0
                                :weight normal
                                :width normal)
@@ -797,15 +797,24 @@ before packages are loaded."
     (add-hook 'git-commit-mode-hook 'evil-insert-state)
     (evil-set-initial-state 'magit-log-edit-mode 'insert))
 
-  (spacemacs/set-leader-keys
-    "\""  (lambda () (interactive) (eshell t)))
-
   (with-eval-after-load 'shell-pop
     (defun asok/shell-pop-emacs-state-maybe ()
       (if (eq shell-default-shell 'ansi-term)
           (evil-emacs-state)))
 
-    (add-hook 'shell-pop-in-after-hook #'asok/shell-pop-emacs-state-maybe))
+    (add-hook 'shell-pop-in-after-hook #'asok/shell-pop-emacs-state-maybe)
+
+    (defun asok/eshell-rerun-last-command ()
+      (interactive)
+      (call-interactively #'spacemacs/shell-pop-eshell)
+      (eshell-return-to-prompt)
+      (insert
+       (concat
+        eshell-last-command-name
+        " "
+        (string-join eshell-last-arguments " ")))
+      (eshell-send-input))
+    )
 
   (spacemacs/set-leader-keys
     ":"   #'eval-expression
@@ -862,6 +871,7 @@ before packages are loaded."
   (advice-add 'bundle-open :around #'asok/bundle--around)
 
   (add-hook 'dired-mode-hook #'hl-line-mode)
+  (add-hook 'dired-mode-hook #'auto-revert-mode)
 
   (global-vi-tilde-fringe-mode -1)
 
