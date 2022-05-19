@@ -704,7 +704,8 @@ in `dotspacemacs/user-config'."
    lsp-headerline-breadcrumb-enable nil
    vterm-max-scrollback 10000
    read-process-output-max (* 1024 1024)
-   compilation-ask-about-save nil)
+   compilation-ask-about-save nil
+   ivy-initial-inputs-alist '())
 
   (let ((file "~/.emacs.d/private/custom-variables.el"))
     (setq custom-file file)
@@ -827,21 +828,26 @@ before packages are loaded."
     (defun asok/comint-send-up-arrow ()
       (interactive)
       (or (asok/comint-send-code "\e[A")
-          (call-interactively #'eshell-previous-matching-input-from-input)))
+          (call-interactively #'eshell-previous-input)))
 
     (defun asok/comint-send-down-arrow ()
       (interactive)
       (or (asok/comint-send-code "\e[B")
-          (call-interactively #'eshell-next-matching-input-from-input)))
+          (call-interactively #'eshell-next-input)))
 
-    (evil-define-key 'insert eshell-mode-map
-      (kbd "<up>")   #'asok/comint-send-up-arrow
-      (kbd "<down>") #'asok/comint-send-down-arrow)
+    ;; (evil-define-key 'insert eshell-mode-map
+    ;;   (kbd "<up>")   #'asok/comint-send-up-arrow
+    ;;   (kbd "<down>") #'asok/comint-send-down-arrow)
 
     (evil-define-key 'normal eshell-mode-map
       (kbd "C-r") #'spacemacs/ivy-eshell-history)
     (evil-define-key 'insert eshell-mode-map
       (kbd "C-r") #'spacemacs/ivy-eshell-history)
+
+    (require 'em-term)
+
+    (mapc (lambda (x) (add-to-list 'eshell-visual-commands x))
+          '("irb" "./bin/kuberailsc" "kuberailsc"))
     )
 
   (spacemacs/set-leader-keys
