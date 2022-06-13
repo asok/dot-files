@@ -31,7 +31,8 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layer-path '("~/.emacs.d/private/")
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(vimscript
+   '(go
+     vimscript
      shell-scripts
      typescript
      html
@@ -82,7 +83,7 @@ This function should only modify configuration layer settings."
      ruby-on-rails
      (shell :variables
             shell-default-term-shell "/bin/zsh"
-            shell-default-shell 'eshell)
+            shell-default-shell 'vterm)
      yaml
      chrome
      (syntax-checking :variables flycheck-disabled-checkers '(emacs-lisp-checkdoc))
@@ -341,6 +342,7 @@ It should only modify the values of Spacemacs settings."
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
    dotspacemacs-themes '(
+                         modus-vivendi
                          doom-oceanic-next
                          spacemacs-light
                          base16-google-light
@@ -656,7 +658,14 @@ It should only modify the values of Spacemacs settings."
    dotspacemacs-home-shorten-agenda-source nil
 
    ;; If non-nil then byte-compile some of Spacemacs files.
-   dotspacemacs-byte-compile nil))
+   dotspacemacs-byte-compile nil
+
+   modus-themes-mode-line '(accented borderless padded)
+   modus-themes-bold-constructs t
+   modus-themes-italic-constructs t
+   modus-themes-paren-match '(bold intense)
+   modus-themes-syntax '(faint)
+   ))
 
 (defun dotspacemacs/user-env ()
   "Environment variables setup.
@@ -771,6 +780,19 @@ before packages are loaded."
     (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-pushremote)
     (remove-hook 'magit-status-sections-hook 'magit-insert-unpulled-from-upstream)
     (remove-hook 'magit-status-sections-hook 'magit-insert-unpushed-to-upstream-or-recent)
+
+    (defvar-local asok/gsub-cr-with-lr nil)
+
+    (defun asok/gsub-cr-with-lr (args)
+      (if asok/gsub-cr-with-lr
+          (let ((proc (car args))
+                (string (car (cdr args))))
+            (list
+             proc
+             (replace-regexp-in-string "\r" "\n" string)))
+       args))
+
+    (advice-add 'magit-process-filter :filter-args #'asok/gsub-cr-with-lr)
     )
 
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
@@ -1106,9 +1128,8 @@ Interactively also sends a terminating newline."
   (with-eval-after-load 'gotham-theme
     (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
 
-  (spacemacs//add-to-load-path "~/projects/all-the-icons-ivy")
-  (require 'all-the-icons-ivy)
-  (all-the-icons-ivy-setup)
+  ;; (require 'all-the-icons-ivy)
+  ;; (all-the-icons-ivy-setup)
 
   (show-smartparens-global-mode -1)
   (global-highlight-parentheses-mode +1)
