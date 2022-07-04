@@ -49,7 +49,7 @@ This function should only modify configuration layer settings."
      (auto-completion :variables
                       auto-completion-idle-delay 0.2
                       auto-completion-minimum-prefix-length 2
-                      auto-completion-enable-snippets-in-popup nil
+                      auto-completion-enable-snippets-in-popup t
                       auto-completion-enable-sort-by-usage nil
                       auto-completion-return-key-behavior nil
                       auto-completion-tab-key-behavior 'complete
@@ -143,7 +143,11 @@ This function should only modify configuration layer settings."
 
      hackernews
      selectric
-
+     (tree-sitter :variables
+                  spacemacs-tree-sitter-hl-black-list '(js2-mode rjsx-mode)
+                  tree-sitter-syntax-highlight-enable t
+                  tree-sitter-fold-enable t
+                  tree-sitter-fold-indicators-enable nil)
      )
 
 
@@ -188,6 +192,7 @@ This function should only modify configuration layer settings."
                                       base16-theme
                                       exec-path-from-shell
                                       devdocs-browser
+                                      apheleia
                                       )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -212,6 +217,10 @@ It should only modify the values of Spacemacs settings."
    ;; If non-nil then enable support for the portable dumper. You'll need
    ;; to compile Emacs 27 from source following the instructions in file
    ;; EXPERIMENTAL.org at to root of the git repository.
+   ;;
+   ;; WARNING: pdumper does not work with Native Compilation, so it's disabled
+   ;; regardless of the following setting when native compilation is in effect.
+   ;;
    ;; (default nil)
    dotspacemacs-enable-emacs-pdumper nil
 
@@ -296,6 +305,13 @@ It should only modify the values of Spacemacs settings."
    ;; If the value is nil then no banner is displayed. (default 'official)
    dotspacemacs-startup-banner 'official
 
+   ;; Scale factor controls the scaling (size) of the startup banner. Default
+   ;; value is `auto' for scaling the logo automatically to fit all buffer
+   ;; contents, to a maximum of the full image height and a minimum of 3 line
+   ;; heights. If set to a number (int or float) it is used as a constant
+   ;; scaling factor for the default logo size.
+   dotspacemacs-startup-banner-scale 'auto
+
    ;; List of items to show in startup buffer or an association list of
    ;; the form `(list-type . list-size)`. If nil then it is disabled.
    ;; Possible values for list-type are:
@@ -317,6 +333,11 @@ It should only modify the values of Spacemacs settings."
 
    ;; The minimum delay in seconds between number key presses. (default 0.4)
    dotspacemacs-startup-buffer-multi-digit-delay 0.4
+
+   ;; If non-nil, show file icons for entries and headings on Spacemacs home buffer.
+   ;; This has no effect in terminal or if "all-the-icons" package or the font
+   ;; is not installed. (default nil)
+   dotspacemacs-startup-buffer-show-icons t
 
    ;; Default major mode for a new empty buffer. Possible values are mode
    ;; names such as `text-mode'; and `nil' to use Fundamental mode.
@@ -425,7 +446,6 @@ It should only modify the values of Spacemacs settings."
    dotspacemacs-distinguish-gui-tab nil
 
    ;; Name of the default layout (default "Default")
-   dotspacemacs-ex-substitute-global t
    dotspacemacs-default-layout-name "Default"
 
    ;; If non-nil the default layout name is displayed in the mode-line.
@@ -462,6 +482,7 @@ It should only modify the values of Spacemacs settings."
    ;; Which-key delay in seconds. The which-key buffer is the popup listing
    ;; the commands bound to the current keystroke sequence. (default 0.4)
    dotspacemacs-which-key-delay 0.4
+
    ;; Which-key frame position. Possible values are `right', `bottom' and
    ;; `right-then-bottom'. right-then-bottom tries to display the frame to the
    ;; right; if there is insufficient space it displays it at the bottom.
@@ -561,7 +582,7 @@ It should only modify the values of Spacemacs settings."
    ;; (default t)
    dotspacemacs-activate-smartparens-mode t
 
-   ;; If non-nil pressing the closing parenthesis `' key in insert mode passes
+   ;; If non-nil pressing the closing parenthesis `)' key in insert mode passes
    ;; over any automatically added closing parenthesis, bracket, quote, etc...
    ;; This can be temporary disabled by pressing `C-q' before `)'. (default nil)
    dotspacemacs-smart-closing-parenthesis nil
@@ -673,7 +694,8 @@ This function defines the environment variables for your Emacs session. By
 default it calls `spacemacs/load-spacemacs-env' which loads the environment
 variables declared in `~/.spacemacs.env' or `~/.spacemacs.d/.spacemacs.env'.
 See the header of this file for more information."
-  (spacemacs/load-spacemacs-env))
+  (spacemacs/load-spacemacs-env)
+)
 
 (defun dotspacemacs/user-init ()
   "Initialization function for user code.
@@ -742,7 +764,9 @@ in `dotspacemacs/user-config'."
   "Library to load while dumping.
 This function is called only while dumping Spacemacs configuration. You can
 `require' or `load' the libraries of your choice that will be included in the
-dump.")
+dump."
+)
+
 
 (defun dotspacemacs/user-config ()
   "Configuration for user code:
@@ -796,6 +820,23 @@ before packages are loaded."
     )
 
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+
+  (with-eval-after-load 'apheleia
+    (cl-defun asok/lsp-format-buffer-formatter (&key buffer scratch callback &allow-other-keys)
+      ;; `lsp-format-buffer' requires `buffer-file-name' to be set.
+      (let ((buffer-file-name (buffer-file-name buffer)))
+        (with-lsp-workspaces (with-current-buffer buffer (lsp-workspaces))
+          (with-current-buffer scratch
+            (lsp-format-buffer))))
+      (when callback (funcall callback)))
+
+    ;; add-to-list will place the new element in the front
+    ;; so it will shadow the default formatter for ruby-mode
+    (add-to-list 'apheleia-mode-alist '(ruby-mode . lsp-format-buffer-formatter))
+    (add-to-list 'apheleia-formatters '(lsp-format-buffer-formatter . asok/lsp-format-buffer-formatter))
+    )
+
+  (add-hook 'ruby-mode-hook #'apheleia-mode)
 
   (with-eval-after-load 'evil
     (evil-define-key 'normal global-map
@@ -1047,7 +1088,8 @@ Interactively also sends a terminating newline."
     (setq devdocs-browser-cache-directory "~/.emacs.d/private/")
 
     (add-to-list 'devdocs-browser-major-mode-docs-alist
-                 '(ruby-mode "ruby"))
+                 '(ruby-mode "ruby")
+                 '(rjsx-mode ("react" "javascript")))
     )
 
   (with-eval-after-load 'vterm
@@ -1146,6 +1188,12 @@ Interactively also sends a terminating newline."
      'doom-city-lights
      '(ivy-current-match ((t (:underline t))))
      '(font-lock-variable-name-face ((t (:foreground "#5EC4FF"))))))
+
+  (with-eval-after-load 'doom-nord-theme
+    (let ((custom--inhibit-theme-enable nil))
+      (custom-theme-set-faces
+       'doom-nord
+       '(font-lock-variable-name-face ((t (:inherit 'font-lock-builtin-face)))))))
 
   ;; Not working...
   (with-eval-after-load 'solo-jazz-theme
@@ -1374,9 +1422,3 @@ Interactively also sends a terminating newline."
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
-
-(defun dotspacemacs/emacs-custom-settings ()
-  "Emacs custom settings.
-This is an auto-generated function, do not modify its content directly, use
-Emacs customize menu instead.
-This function is called at the very end of Spacemacs initialization.")
