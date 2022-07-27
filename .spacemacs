@@ -41,6 +41,7 @@ This function should only modify configuration layer settings."
      windows-scripts
      nginx
      sql
+     helpful
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press `SPC f e R' (Vim style) or
