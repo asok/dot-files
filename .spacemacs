@@ -757,7 +757,8 @@ in `dotspacemacs/user-config'."
           ("org"      . "orgmode.org/elpa/")
           ("gnu"      . "elpa.gnu.org/packages/")))
 
-  (setq slack-enable-emoji t)
+  (setq slack-enable-emoji t
+        native-comp-async-report-warnings-errors 'silent)
 
   )
 
@@ -1348,8 +1349,6 @@ Interactively also sends a terminating newline."
                         (magit-get-current-branch))))
 
   (with-eval-after-load 'rspec-mode
-    (rspec-install-snippets)
-
     (defun asok/rspec-toggle-spec-and-target (fn)
       (let ((file (rspec-spec-or-target)))
         (if (file-exists-p file)
