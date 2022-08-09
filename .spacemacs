@@ -1418,6 +1418,8 @@ Interactively also sends a terminating newline."
      'counsel-find-file
      `((,(propertize "delete" 'face 'font-lock-warning-face)
         (lambda (x) (delete-file (expand-file-name x ivy--directory)))))))
+
+  (define-key evil-insert-state-map [remap default-indent-new-line] 'hippie-expand)
     )
 
 ;; Do not write anything past this comment. This is where Emacs will
