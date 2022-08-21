@@ -1173,7 +1173,7 @@ Interactively also sends a terminating newline."
     (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
 
   ;; (require 'all-the-icons-ivy)
-  ;; (all-the-icons-ivy-setup)
+  (all-the-icons-ivy-setup)
 
   (show-smartparens-global-mode -1)
   (global-highlight-parentheses-mode +1)
