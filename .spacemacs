@@ -31,7 +31,8 @@ This function should only modify configuration layer settings."
    dotspacemacs-configuration-layer-path '("~/.emacs.d/private/")
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(go
+   '(python
+     go
      vimscript
      shell-scripts
      typescript
@@ -84,7 +85,7 @@ This function should only modify configuration layer settings."
      ruby-on-rails
      (shell :variables
             shell-default-term-shell "/bin/zsh"
-            shell-default-shell 'vterm)
+            shell-default-shell 'eshell)
      yaml
      chrome
      (syntax-checking :variables flycheck-disabled-checkers '(emacs-lisp-checkdoc))
@@ -194,6 +195,9 @@ This function should only modify configuration layer settings."
                                       exec-path-from-shell
                                       devdocs-browser
                                       apheleia
+                                      libgit
+                                      eshell-vterm
+                                      python
                                       )
    ;; A list of packages and/or extensions that will not be install and loaded.
    dotspacemacs-excluded-packages '()
@@ -364,7 +368,7 @@ It should only modify the values of Spacemacs settings."
    ;; Press `SPC T n' to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
    dotspacemacs-themes '(
-                         doom-nord-aurora
+                         doom-city-lights
                          modus-vivendi
                          doom-oceanic-next
                          spacemacs-light
@@ -377,7 +381,6 @@ It should only modify the values of Spacemacs settings."
                          doom-spacegrey
                          solarized-light
                          solarized-dark
-                         doom-city-lights
                          doom-nord
                          doom-spacegrey
                          doom-one
@@ -800,6 +803,7 @@ before packages are loaded."
    bidi-paragraph-direction 'left-to-right)
 
   (with-eval-after-load 'magit
+    (require 'libgit)
     (magit-auto-revert-mode 1)
     (setq magit-save-repository-buffers 'dontask)
     (remove-hook 'magit-status-sections-hook 'magit-insert-tags-header)
@@ -854,6 +858,13 @@ before packages are loaded."
       (kbd "s-<left>")   #'switch-to-prev-buffer
       (kbd "s-<right>")   #'switch-to-next-buffer)
 
+    (evil-define-key 'normal restclient-response-mode-map
+      (kbd "q") (lambda ()
+                  (interactive)
+                  (quit-window (get-buffer-window (current-buffer)))))
+
+    (add-hook 'restclient-response-mode-hook #'evil-normalize-keymaps)
+
     (evil-define-key 'visual global-map (kbd "v") #'er/expand-region)
 
     (define-key global-map (kbd "s-<left>")   #'switch-to-prev-buffer)
@@ -874,17 +885,22 @@ before packages are loaded."
 
     (defun asok/eshell-rerun-last-command ()
       (interactive)
-      (call-interactively #'spacemacs/shell-pop-eshell)
+      (let ((command-name))
+        (save-excursion
+          (call-interactively #'spacemacs/shell-pop-eshell)
+          (setq command-name eshell-last-command-name))
 
-      (if eshell-last-command-name
-          (progn
-            (let ((name (if (string-match "function eshell/\\(.+\\)>" eshell-last-command-name)
-                            (match-string 1 eshell-last-command-name)
-                          eshell-last-command-name)))
-              (eshell-return-to-prompt)
-              (insert (concat name " " (string-join eshell-last-arguments " ")))
-              (eshell-send-input)))
-        (error "No last command")))
+        (if command-name
+            (progn
+              (call-interactively #'spacemacs/shell-pop-eshell)
+
+              (let ((name (if (string-match "function eshell/\\(.+\\)>" command-name)
+                              (match-string 1 command-name)
+                            command-name)))
+                (eshell-return-to-prompt)
+                (insert (concat name " " (string-join eshell-last-arguments " ")))
+                (eshell-send-input)))
+          (error "No last command"))))
 
     (defun asok/comint-send-code (code)
       (let ((process (get-buffer-process (current-buffer))))
@@ -1173,7 +1189,6 @@ Interactively also sends a terminating newline."
   (with-eval-after-load 'gotham-theme
     (custom-theme-set-faces 'gotham '(js2-object-property ((t (:inherit 'font-lock-type-face))))))
 
-  ;; (require 'all-the-icons-ivy)
   (all-the-icons-ivy-setup)
 
   (show-smartparens-global-mode -1)
@@ -1185,6 +1200,9 @@ Interactively also sends a terminating newline."
 
   (defvar so-long-threshold 500)
   (defvar so-long-max-lines 5)
+
+  (with-eval-after-load 'docker
+    (setq docker-run-async-with-buffer-function 'docker-run-async-with-buffer-vterm))
 
   (with-eval-after-load 'doom-city-lights
     (custom-theme-set-faces
